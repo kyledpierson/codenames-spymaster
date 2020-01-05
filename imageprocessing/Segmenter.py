@@ -6,16 +6,15 @@ from math import exp, pow
 from typing import Tuple
 
 
-class ImageProcessor:
+class Segmenter:
     def __init__(self):
         pass
 
-    def segmentGrabcut(self, image, rect: Tuple = None, useRectMask: bool = True):
+    def grabcut(self, image, maskType: bool = 'rectangular', customMask: Tuple = None):
         """ Segments image, assuming the outer portion is representative of the background
         :param image: image to segment
-        :param rect: bounding box that contains the foreground (minX, minY, maxX, maxY)
-                     None means use a radial mask in the center of the image
-        :param useRectMask: use a rectangular mask instead of a radial one
+        :param maskType: type of mask to apply ('rectangular', 'circular')
+        :param customMask: bounding box that contains the foreground (minX, minY, maxX, maxY)
         :return: segmented image, mask image """
         rows, cols = image.shape[:2]
 
@@ -25,13 +24,13 @@ class ImageProcessor:
         fgModel = np.zeros((1, 65), np.float64)
         mode = cv2.GC_INIT_WITH_RECT
 
-        if rect:
-            minX, minY, width, height = rect
+        if customMask:
+            minX, minY, width, height = customMask
             maskImage[minY:minY + height, minX:minX + width] = 255
         else:
             midRow = rows / 2.
             midCol = cols / 2.
-            if useRectMask:
+            if maskType is 'rectangular':
                 bgXmin = (1. / 12.) * cols
                 bgXmax = cols - bgXmin
                 bgYmin = (1. / 12.) * rows
@@ -77,14 +76,14 @@ class ImageProcessor:
             maskImage = mask * 85
             mode = cv2.GC_INIT_WITH_MASK
 
-        cv2.grabCut(image, mask, rect, bgModel, fgModel, 4, mode)
+        cv2.grabCut(image, mask, customMask, bgModel, fgModel, 2, mode)
 
         mask = np.where((mask == 0) | (mask == 2), 0, 1).astype(np.uint8)
         segmentedImage = image * mask[:, :, np.newaxis]
 
         return segmentedImage, maskImage
 
-    def segmentMrf(self, image, costImage, mu_1, mu_2, mu_3, sigma_1, sigma_2, sigma_3, pairwiseCost):
+    def mrf(self, image, costImage, mu_1, mu_2, mu_3, sigma_1, sigma_2, sigma_3, pairwiseCost):
         """ Segments image as a Markov random field
         :param image: image to segment
         :param costImage: image on which to base the costs
@@ -96,7 +95,7 @@ class ImageProcessor:
         :param sigma_3: std of the third channel
         :param pairwiseCost: fraction to use as pairwise cost
         :return: segmented image """
-        costs = [[self.gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
+        costs = [[self.__gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
                   for pixel in row] for row in costImage]
         costs = np.array(costs)
 
@@ -113,14 +112,12 @@ class ImageProcessor:
 
         return segmentedImage
 
-    def segmentThreshold(self, image, colorSpaceImage, method, range=None):
+    def threshold(self, image, colorSpaceImage, method, range=None):
         """
         Performs range-based, adaptive or otsu thresholding on image
         :param image: image to segment
         :param colorSpaceImage: image in the desired color space used for thresholding
         :param method: method to use ('range', 'adaptive' or 'otsu')
-        :param blockSize:
-        :param C:
         :param range: range for range-based thresholding
         :return: thresholded image
         """
@@ -129,8 +126,8 @@ class ImageProcessor:
             mask = cv2.inRange(colorSpaceImage, lower, upper)
 
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
-            mask = cv2.erode(mask, kernel, iterations=3)
-            mask = cv2.dilate(mask, kernel, iterations=3)
+            mask = cv2.erode(mask, kernel)
+            mask = cv2.dilate(mask, kernel)
             mask = cv2.GaussianBlur(mask, (3, 3), 0)
         elif method == 'adaptive':
             mask = cv2.adaptiveThreshold(colorSpaceImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
@@ -146,13 +143,13 @@ class ImageProcessor:
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
     # -------------------------------------------------------- #
-    def gaussianKernel2D(self, pixel, mu_1, sigma_1, mu_2, sigma_2):
+    def __gaussianKernel2D(self, pixel, mu_1, sigma_1, mu_2, sigma_2):
         d = exp(-(
                 pow(mu_1 - pixel[0], 2) / (2 * pow(sigma_1, 2)) +
                 pow(mu_2 - pixel[2], 2) / (2 * pow(sigma_2, 2))))
         return d * 255
 
-    def gaussianKernel3D(self, pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3):
+    def __gaussianKernel3D(self, pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3):
         n = 1  # No normalization
         # n = 1 / (pow(2 * pi, 3 / 2) * y_sigma * cr_sigma * cb_sigma)
 
