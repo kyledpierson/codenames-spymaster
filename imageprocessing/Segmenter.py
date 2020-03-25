@@ -112,7 +112,7 @@ class Segmenter:
 
         return segmentedImage
 
-    def threshold(self, image, colorSpaceImage, method, range=None):
+    def threshold(self, image, colorSpaceImage, method, ranges=None):
         """
         Performs range-based, adaptive or otsu thresholding on image
         :param image: image to segment
@@ -121,14 +121,34 @@ class Segmenter:
         :param range: range for range-based thresholding
         :return: thresholded image
         """
-        if method == 'range':
-            lower, upper = range
-            mask = cv2.inRange(colorSpaceImage, lower, upper)
+        """
+        if colorSpace is cv2.COLOR_BGR2RGB:
+            lightRed1 = (150, 0, 0)
+            darkRed1 = (255, 70, 100)
 
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
-            mask = cv2.erode(mask, kernel)
-            mask = cv2.dilate(mask, kernel)
-            mask = cv2.GaussianBlur(mask, (3, 3), 0)
+            lightRed2 = (150, 0, 0)
+            darkRed2 = (255, 70, 100)
+
+            lightBlue = (0, 0, 120)
+            darkBlue = (80, 180, 255)
+        elif colorSpace is cv2.COLOR_BGR2HLS:
+            lightRed1 = (0, 100, 150)
+            darkRed1 = (40, 150, 255)
+
+            lightRed2 = (215, 100, 150)
+            darkRed2 = (255, 150, 255)
+
+            lightBlue = (115, 75, 120)
+            darkBlue = (155, 130, 255)
+        """
+
+        if method == 'range':
+            mask = None
+            for range in ranges:
+                lower, upper = range
+                newMask = cv2.inRange(colorSpaceImage, lower, upper)
+                mask = mask + newMask if mask else newMask
+
         elif method == 'adaptive':
             mask = cv2.adaptiveThreshold(colorSpaceImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                          11, 3)
@@ -137,8 +157,38 @@ class Segmenter:
         else:
             raise ValueError(method + ' not implemented')
 
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+        mask = cv2.erode(mask, kernel)
+        mask = cv2.dilate(mask, kernel)
+        mask = cv2.GaussianBlur(mask, (3, 3), 0)
+
         thresholdedImage = cv2.bitwise_and(image, image, mask=mask)
         return thresholdedImage
+
+    def shape(self, image):
+        """ Segments all squares of a keycard
+        :param image: an image of the keycard
+        :return: An image with contours drawn on the square perimeters """
+        processedImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        processedImage = cv2.GaussianBlur(processedImage, (3, 3), 0)
+        _, processedImage = cv2.threshold(processedImage, 100, 255, cv2.THRESH_BINARY)
+
+        _, contours, hierarchy = cv2.findContours(processedImage.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area > 1000:
+                perimeter = cv2.arcLength(c, True)
+                approx = cv2.approxPolyDP(c, 0.05 * perimeter, True)
+
+                if len(approx) == 4:
+                    (x, y, w, h) = cv2.boundingRect(approx)
+                    ar = w / float(h)
+
+                    if 0.95 <= ar <= 1.05:
+                        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+
+        return image
 
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #

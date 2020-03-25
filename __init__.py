@@ -2,6 +2,19 @@ import cv2
 
 from KeycardReader import KeycardReader
 
+"""
+Ideas
+ - Canny
+
+cv2.imshow("CLAHE image", claheImage)
+cv2.imshow("Edge image", edgeImage)
+cv2.imshow("Color image", colorImage)
+cv2.imshow("Shape image", shapeImage)
+cv2.imshow("Grabcut image", grabcutImage)
+cv2.imshow("Mask Image", maskImage)
+cv2.waitKey(0)
+"""
+
 # ==================================================
 inDir = 'inImages/'
 outDir = 'outImages/'
@@ -11,10 +24,11 @@ imageFilenames = [
     'keycard-3.jpg',
     'keycard-4.jpg'
 ]
+referenceImageFileName = "keycard-reference.webp"
 # ==================================================
 
 if __name__ == '__main__':
-    keycardReader = KeycardReader()
+    keycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
         image, b, r, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename)

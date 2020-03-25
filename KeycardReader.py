@@ -10,16 +10,15 @@ from KeycardDescriptor import KeycardDescriptor
 
 
 class KeycardReader:
-    referenceImage = None
-    filterer = Filterer()
-    morpher = Morpher()
-    segmenter = Segmenter()
-    preprocessor = Preprocessor()
-
-    def __init__(self):
-        self.referenceImage = cv2.imread("keycard-reference.webp")
+    def __init__(self, referenceImageFileName):
+        self.referenceImage = cv2.imread(referenceImageFileName)
         self.referenceImage, _ = self.segmenter.grabcut(self.referenceImage)
         self.referenceImage = self.filterer.equalizeHistogram(self.referenceImage)
+
+        self.filterer = Filterer()
+        self.morpher = Morpher()
+        self.segmenter = Segmenter()
+        self.preprocessor = Preprocessor()
 
     def extractKeycardDescriptor(self, path):
         image = cv2.imread(path)
