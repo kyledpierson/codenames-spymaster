@@ -1,21 +1,19 @@
+from math import exp, pow
+from typing import Tuple
+
 import cv2
 import maxflow
 import numpy as np
-from math import exp, pow
 
-from typing import Tuple
+Image = np.ndarray
 
 
 class Segmenter:
     def __init__(self):
         pass
 
-    def grabcut(self, image, maskType: bool = 'rectangular', customMask: Tuple = None):
-        """ Segments image, assuming the outer portion is representative of the background
-        :param image: image to segment
-        :param maskType: type of mask to apply ('rectangular', 'circular')
-        :param customMask: bounding box that contains the foreground (minX, minY, maxX, maxY)
-        :return: segmented image, mask image """
+    @staticmethod
+    def grabcut(image: Image, maskType: str = 'rectangular', customMask: Tuple = None) -> Image:
         rows, cols = image.shape[:2]
 
         mask = np.zeros((rows, cols), np.uint8)
@@ -81,21 +79,12 @@ class Segmenter:
         mask = np.where((mask == 0) | (mask == 2), 0, 1).astype(np.uint8)
         segmentedImage = image * mask[:, :, np.newaxis]
 
-        return segmentedImage, maskImage
+        return segmentedImage
 
-    def mrf(self, image, costImage, mu_1, mu_2, mu_3, sigma_1, sigma_2, sigma_3, pairwiseCost):
-        """ Segments image as a Markov random field
-        :param image: image to segment
-        :param costImage: image on which to base the costs
-        :param mu_1: mean of the first channel
-        :param mu_2: mean of the second channel
-        :param mu_3: mean of the third channel
-        :param sigma_1: std of the first channel
-        :param sigma_2: std of the second channel
-        :param sigma_3: std of the third channel
-        :param pairwiseCost: fraction to use as pairwise cost
-        :return: segmented image """
-        costs = [[self.__gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
+    @staticmethod
+    def mrf(image: Image, costImage: Image, mu_1: float, mu_2: float, mu_3: float,
+            sigma_1: float, sigma_2: float, sigma_3: float, pairwiseCost: float) -> Image:
+        costs = [[Segmenter.__gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
                   for pixel in row] for row in costImage]
         costs = np.array(costs)
 
@@ -112,48 +101,17 @@ class Segmenter:
 
         return segmentedImage
 
-    def threshold(self, image, colorSpaceImage, method, ranges=None):
-        """
-        Performs range-based, adaptive or otsu thresholding on image
-        :param image: image to segment
-        :param colorSpaceImage: image in the desired color space used for thresholding
-        :param method: method to use ('range', 'adaptive' or 'otsu')
-        :param range: range for range-based thresholding
-        :return: thresholded image
-        """
-        """
-        if colorSpace is cv2.COLOR_BGR2RGB:
-            lightRed1 = (150, 0, 0)
-            darkRed1 = (255, 70, 100)
-
-            lightRed2 = (150, 0, 0)
-            darkRed2 = (255, 70, 100)
-
-            lightBlue = (0, 0, 120)
-            darkBlue = (80, 180, 255)
-        elif colorSpace is cv2.COLOR_BGR2HLS:
-            lightRed1 = (0, 100, 150)
-            darkRed1 = (40, 150, 255)
-
-            lightRed2 = (215, 100, 150)
-            darkRed2 = (255, 150, 255)
-
-            lightBlue = (115, 75, 120)
-            darkBlue = (155, 130, 255)
-        """
-
-        if method == 'range':
-            mask = None
-            for range in ranges:
-                lower, upper = range
-                newMask = cv2.inRange(colorSpaceImage, lower, upper)
-                mask = mask + newMask if mask else newMask
-
-        elif method == 'adaptive':
-            mask = cv2.adaptiveThreshold(colorSpaceImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
-                                         11, 3)
+    @staticmethod
+    def threshold(image: Image, thresholdImage: Image, method: str = 'otsu', ranges: Tuple = None) -> Image:
+        mask = None
+        if method == 'adaptive':
+            mask = cv2.adaptiveThreshold(thresholdImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 3)
         elif method == 'otsu':
-            _, mask = cv2.threshold(colorSpaceImage, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            _, mask = cv2.threshold(thresholdImage, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        elif method == 'range':
+            for lower, upper in ranges:
+                newMask = cv2.inRange(thresholdImage, lower, upper)
+                mask = mask + newMask if mask else newMask
         else:
             raise ValueError(method + ' not implemented')
 
@@ -165,15 +123,13 @@ class Segmenter:
         thresholdedImage = cv2.bitwise_and(image, image, mask=mask)
         return thresholdedImage
 
-    def shape(self, image):
-        """ Segments all squares of a keycard
-        :param image: an image of the keycard
-        :return: An image with contours drawn on the square perimeters """
+    @staticmethod
+    def drawRectangles(image: Image) -> Image:
         processedImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         processedImage = cv2.GaussianBlur(processedImage, (3, 3), 0)
         _, processedImage = cv2.threshold(processedImage, 100, 255, cv2.THRESH_BINARY)
 
-        _, contours, hierarchy = cv2.findContours(processedImage.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, hierarchy = cv2.findContours(processedImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for c in contours:
             area = cv2.contourArea(c)
@@ -193,13 +149,16 @@ class Segmenter:
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
     # -------------------------------------------------------- #
-    def __gaussianKernel2D(self, pixel, mu_1, sigma_1, mu_2, sigma_2):
+    @staticmethod
+    def __gaussianKernel2D(pixel: Tuple, mu_1: float, sigma_1: float, mu_2: float, sigma_2: float):
         d = exp(-(
                 pow(mu_1 - pixel[0], 2) / (2 * pow(sigma_1, 2)) +
                 pow(mu_2 - pixel[2], 2) / (2 * pow(sigma_2, 2))))
         return d * 255
 
-    def __gaussianKernel3D(self, pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3):
+    @staticmethod
+    def __gaussianKernel3D(pixel: Tuple,
+                           mu_1: float, sigma_1: float, mu_2: float, sigma_2: float, mu_3: float, sigma_3: float):
         n = 1  # No normalization
         # n = 1 / (pow(2 * pi, 3 / 2) * y_sigma * cr_sigma * cb_sigma)
 

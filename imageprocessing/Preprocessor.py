@@ -1,21 +1,17 @@
+from math import floor, ceil
+from typing import Tuple
+
 import cv2
 import imutils
-from math import floor, ceil
-
-from typing import Tuple
+from numpy import ndarray as Image
 
 
 class Preprocessor:
     def __init__(self):
         pass
 
-    def resizeToSameSize(self, image, targetImage, width: int, height: int) -> Tuple:
-        """ Resizes both images to the same size, padding when necessary
-        :param image: first image
-        :param targetImage: second image
-        :param width: max width of the new images
-        :param height: max height of the new images
-        :return: both images, resized to the same size """
+    @staticmethod
+    def resizeToSameSize(image: Image, targetImage: Image, width: int, height: int) -> Tuple:
         resizedImage = imutils.resize(image, width, height)
         resizedTargetImage = imutils.resize(targetImage, width, height)
 

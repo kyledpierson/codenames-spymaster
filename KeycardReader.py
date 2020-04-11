@@ -6,29 +6,23 @@ from imageprocessing.Morpher import Morpher
 from imageprocessing.Preprocessor import Preprocessor
 from imageprocessing.Segmenter import Segmenter
 
-from KeycardDescriptor import KeycardDescriptor
-
 
 class KeycardReader:
     def __init__(self, referenceImageFileName):
         self.referenceImage = cv2.imread(referenceImageFileName)
-        self.referenceImage, _ = self.segmenter.grabcut(self.referenceImage)
-        self.referenceImage = self.filterer.equalizeHistogram(self.referenceImage)
-
-        self.filterer = Filterer()
-        self.morpher = Morpher()
-        self.segmenter = Segmenter()
-        self.preprocessor = Preprocessor()
+        self.referenceImage = Segmenter.grabcut(self.referenceImage)
+        self.referenceImage = Filterer.equalizeHistogram(self.referenceImage,
+                                                         cv2.COLOR_BGR2HSV, cv2.COLOR_HSV2BGR, (0, 0, 1))
 
     def extractKeycardDescriptor(self, path):
         image = cv2.imread(path)
-        image, _ = self.segmenter.grabcut(image)
-        image = self.filterer.equalizeHistogram(image)
+        image = Segmenter.grabcut(image)
+        image = Filterer.equalizeHistogram(image, cv2.COLOR_BGR2HSV, cv2.COLOR_HSV2BGR, (0, 0, 1))
 
-        image, resizedTargetImage = self.preprocessor.resizeToSameSize(image, self.referenceImage, 500, 500)
-        image = self.morpher.registerWithEcc(image, resizedTargetImage)
-        image = self.filterer.mapHistogram(image, resizedTargetImage)
-        image = self.filterer.enhanceEdges(image)
+        image, resizedTargetImage = Preprocessor.resizeToSameSize(image, self.referenceImage, 500, 500)
+        image = Morpher.registerWithEcc(image, resizedTargetImage)
+        image = Filterer.mapHistogram(image, resizedTargetImage, cv2.COLOR_BGR2LAB, cv2.COLOR_LAB2BGR)
+        image = Filterer.enhanceEdges(image)
 
         b = image[:, :, 0].copy()
         r = image[:, :, 2].copy()
@@ -39,7 +33,7 @@ class KeycardReader:
                 b[i, j] = max(0, 255 - np.linalg.norm(np.array([255, 0, 0]) - np.array(image[i, j])))
                 r[i, j] = max(0, 255 - np.linalg.norm(np.array([0, 0, 255]) - np.array(image[i, j])))
 
-        bThresholded = self.segmenter.threshold(image, b, 'otsu')
-        rThresholded = self.segmenter.threshold(image, r, 'otsu')
+        bThresholded = Segmenter.threshold(image, b)
+        rThresholded = Segmenter.threshold(image, r)
 
         return image, b, r, bThresholded, rThresholded

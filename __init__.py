@@ -6,6 +6,21 @@ from KeycardReader import KeycardReader
 Ideas
  - Canny
 
+if colorSpace is cv2.COLOR_BGR2RGB:
+    lightRed1 = (150, 0, 0)
+    darkRed1 = (255, 70, 100)
+    lightRed2 = (150, 0, 0)
+    darkRed2 = (255, 70, 100)
+    lightBlue = (0, 0, 120)
+    darkBlue = (80, 180, 255)
+elif colorSpace is cv2.COLOR_BGR2HLS:
+    lightRed1 = (0, 100, 150)
+    darkRed1 = (40, 150, 255)
+    lightRed2 = (215, 100, 150)
+    darkRed2 = (255, 150, 255)
+    lightBlue = (115, 75, 120)
+    darkBlue = (155, 130, 255)
+
 cv2.imshow("CLAHE image", claheImage)
 cv2.imshow("Edge image", edgeImage)
 cv2.imshow("Color image", colorImage)
@@ -22,7 +37,13 @@ imageFilenames = [
     'keycard-1.jpg',
     'keycard-2.jpg',
     'keycard-3.jpg',
-    'keycard-4.jpg'
+    'keycard-4.jpg',
+    'keycard-5.jpg',
+    'keycard-6.jpg',
+    'keycard-7.jpg',
+    'keycard-8.jpg',
+    'keycard-dark-1.jpg',
+    'keycard-dark-2.jpg'
 ]
 referenceImageFileName = "keycard-reference.webp"
 # ==================================================

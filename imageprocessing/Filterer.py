@@ -1,70 +1,52 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
 
-from typing import Tuple
+Image = np.ndarray
 
 
 class Filterer:
     def __init__(self):
         pass
 
-    def equalizeHistogram(self, image):
-        """ Performs CLAHE (Contrast Limited Adaptive Histogram Equalization).
-        :param image: BGR image
-        :return equalized BGR image """
+    @staticmethod
+    def equalizeHistogram(image: Image, fromColorSpace: int, toColorSpace: int, channelsToEqualize: Tuple) -> Image:
+        convertedImage = cv2.cvtColor(image, fromColorSpace)
+        c1, c2, c3 = cv2.split(convertedImage)
 
-        hsvImage = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsvImage)
-
+        # Perform CLAHE
         clahe = cv2.createCLAHE()
-        equalizedV = clahe.apply(v)
+        c1 = clahe.apply(c1) if channelsToEqualize[0] else c1
+        c2 = clahe.apply(c2) if channelsToEqualize[1] else c2
+        c3 = clahe.apply(c3) if channelsToEqualize[2] else c3
 
-        equalizedHsvImage = cv2.merge((h, s, equalizedV))
-        equalizedImage = cv2.cvtColor(equalizedHsvImage, cv2.COLOR_HSV2BGR)
+        equalizedConvertedImage = cv2.merge((c1, c2, c3))
+        equalizedImage = cv2.cvtColor(equalizedConvertedImage, toColorSpace)
 
         return equalizedImage
 
-    def mapHistogram(self, image, targetImage):
-        """ Maps color histogram of targetImage onto image.
-        :param image: BGR image
-        :param targetImage: BGR target image
-        :return BGR image with targetImage color """
+    @staticmethod
+    def mapHistogram(image: Image, targetImage: Image, fromColorSpace: int, toColorSpace: int) -> Image:
+        convertedImage = cv2.cvtColor(image, fromColorSpace).astype("float32")
+        convertedTargetImage = cv2.cvtColor(targetImage, fromColorSpace).astype("float32")
 
-        labImage = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype("float32")
-        labTargetImage = cv2.cvtColor(targetImage, cv2.COLOR_BGR2LAB).astype("float32")
+        c1Mean, c1Std, c2Mean, c2Std, c3Mean, c3Std = Filterer.__computeImageStats(convertedImage)
+        c1MeanTarget, c1StdTarget, c2MeanTarget, c2StdTarget, c3MeanTarget, c3StdTarget = \
+            Filterer.__computeImageStats(convertedTargetImage)
 
-        lMean, lStd, aMean, aStd, bMean, bStd = self.__computeImageStats(labImage)
-        lMeanTarget, lStdTarget, aMeanTarget, aStdTarget, bMeanTarget, bStdTarget = self.__computeImageStats(
-            labTargetImage)
+        c1, c2, c3 = cv2.split(convertedImage)
+        c1 = np.clip((c1Std / c1StdTarget) * (c1 - c1Mean) + c1MeanTarget, 0, 255)
+        c2 = np.clip((c2Std / c2StdTarget) * (c2 - c2Mean) + c2MeanTarget, 0, 255)
+        c3 = np.clip((c3Std / c3StdTarget) * (c3 - c3Mean) + c3MeanTarget, 0, 255)
 
-        l, a, b = cv2.split(labImage)
-        l -= lMean
-        a -= aMean
-        b -= bMean
-
-        l = (lStd / lStdTarget) * l
-        a = (aStd / aStdTarget) * a
-        b = (bStd / bStdTarget) * b
-
-        l += lMeanTarget
-        a += aMeanTarget
-        b += bMeanTarget
-
-        l = np.clip(l, 0, 255)
-        a = np.clip(a, 0, 255)
-        b = np.clip(b, 0, 255)
-
-        coloredLabImage = cv2.merge([l, a, b])
-        coloredImage = cv2.cvtColor(coloredLabImage.astype("uint8"), cv2.COLOR_LAB2BGR)
+        coloredConvertedImage = cv2.merge([c1, c2, c3])
+        coloredImage = cv2.cvtColor(coloredConvertedImage.astype("uint8"), toColorSpace)
 
         return coloredImage
 
-    def enhanceEdges(self, image, action: str = 'enhanceEdges', kernel=None):
-        """ Applies a filter to an image, accentuating edges
-        :param image: BGR image to be filtered
-        :param action: desired action (sharpen, excessiveSharpen, enhanceEdges)
-        :param kernel: override kernel to apply to image
-        :return BGR sharpened image """
+    @staticmethod
+    def enhanceEdges(image: Image, action: str = 'enhanceEdges', kernel: Image = None) -> Image:
         enhancedImage = cv2.edgePreservingFilter(image)
         # Alternative: cv2.bilateralFilter(image, 5, 50, 50)
 
@@ -92,24 +74,22 @@ class Filterer:
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
     # -------------------------------------------------------- #
-    def __computeImageStats(self, image) -> Tuple:
-        """ Splits image into channels, and computes mean and std on each channel.
-        :param image: image for which stats are to be computed
-        :return stats (a.mean, a.std, b.mean, b.std, c.mean, c.std) """
-        a, b, c = cv2.split(image)
+    @staticmethod
+    def __computeImageStats(image: Image) -> Tuple:
+        c1, c2, c3 = cv2.split(image)
 
-        aNoBlack = []
-        bNoBlack = []
-        cNoBlack = []
+        c1NoBlack = []
+        c2NoBlack = []
+        c3NoBlack = []
 
-        for i, row in enumerate(a):
-            for j, pixel in enumerate(row):
-                if a[i][j] != 0:
-                    aNoBlack.append(a[i][j])
-                    bNoBlack.append(b[i][j])
-                    cNoBlack.append(c[i][j])
+        for i, row in enumerate(c1):
+            for j, col in enumerate(row):
+                if c1[i][j] != 0:
+                    c1NoBlack.append(c1[i][j])
+                    c2NoBlack.append(c2[i][j])
+                    c3NoBlack.append(c3[i][j])
 
-        aNoBlack = np.array(aNoBlack)
-        bNoBlack = np.array(bNoBlack)
-        cNoBlack = np.array(cNoBlack)
-        return aNoBlack.mean(), aNoBlack.std(), bNoBlack.mean(), bNoBlack.std(), cNoBlack.mean(), cNoBlack.std()
+        c1NoBlack = np.array(c1NoBlack)
+        c2NoBlack = np.array(c2NoBlack)
+        c3NoBlack = np.array(c3NoBlack)
+        return c1NoBlack.mean(), c1NoBlack.std(), c2NoBlack.mean(), c2NoBlack.std(), c3NoBlack.mean(), c3NoBlack.std()
