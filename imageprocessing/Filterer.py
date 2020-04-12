@@ -46,7 +46,7 @@ class Filterer:
         return coloredImage
 
     @staticmethod
-    def enhanceEdges(image: Image, action: str = 'enhanceEdges', kernel: Image = None) -> Image:
+    def enhanceEdges(image: Image, action: str, kernel: Image = None) -> Image:
         enhancedImage = cv2.edgePreservingFilter(image)
         # Alternative: cv2.bilateralFilter(image, 5, 50, 50)
 

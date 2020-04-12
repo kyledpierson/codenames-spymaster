@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from typing import Tuple
 
 from imageprocessing.Filterer import Filterer
 from imageprocessing.Morpher import Morpher
@@ -8,32 +9,32 @@ from imageprocessing.Segmenter import Segmenter
 
 
 class KeycardReader:
-    def __init__(self, referenceImageFileName):
+    def __init__(self, referenceImageFileName: str):
         self.referenceImage = cv2.imread(referenceImageFileName)
-        self.referenceImage = Segmenter.grabcut(self.referenceImage)
-        self.referenceImage = Filterer.equalizeHistogram(self.referenceImage,
-                                                         cv2.COLOR_BGR2HSV, cv2.COLOR_HSV2BGR, (0, 0, 1))
+        self.referenceImage = Segmenter.grabcut(self.referenceImage, 'rectangular')
 
-    def extractKeycardDescriptor(self, path):
+    def extractKeycardDescriptor(self, path: str, method: str = 'auto') -> Tuple:
         image = cv2.imread(path)
-        image = Segmenter.grabcut(image)
-        image = Filterer.equalizeHistogram(image, cv2.COLOR_BGR2HSV, cv2.COLOR_HSV2BGR, (0, 0, 1))
-
+        image = Segmenter.grabcut(image, 'rectangular')
         image, resizedTargetImage = Preprocessor.resizeToSameSize(image, self.referenceImage, 500, 500)
-        image = Morpher.registerWithEcc(image, resizedTargetImage)
-        image = Filterer.mapHistogram(image, resizedTargetImage, cv2.COLOR_BGR2LAB, cv2.COLOR_LAB2BGR)
-        image = Filterer.enhanceEdges(image)
 
-        b = image[:, :, 0].copy()
-        r = image[:, :, 2].copy()
+        if method is 'ranges':
+            bRange = ((120, 0, 0), (255, 180, 80))
+            rRange = ((0, 0, 150), (100, 70, 255))
 
-        rows, cols = image.shape[:2]
-        for i in range(rows):
-            for j in range(cols):
-                b[i, j] = max(0, 255 - np.linalg.norm(np.array([255, 0, 0]) - np.array(image[i, j])))
-                r[i, j] = max(0, 255 - np.linalg.norm(np.array([0, 0, 255]) - np.array(image[i, j])))
+            bThresholded = Segmenter.threshold(image, image, 'range', bRange)
+            rThresholded = Segmenter.threshold(image, image, 'range', rRange)
+        else:
+            bDist = image[:, :, 0].copy()
+            rDist = image[:, :, 2].copy()
 
-        bThresholded = Segmenter.threshold(image, b)
-        rThresholded = Segmenter.threshold(image, r)
+            rows, cols = image.shape[:2]
+            for i in range(rows):
+                for j in range(cols):
+                    bDist[i, j] = max(0, 255 - np.linalg.norm(np.array([200, 125, 25]) - np.array(image[i, j])))
+                    rDist[i, j] = max(0, 255 - np.linalg.norm(np.array([50, 50, 200]) - np.array(image[i, j])))
 
-        return image, b, r, bThresholded, rThresholded
+            bThresholded = Segmenter.threshold(image, bDist, 'range', (155, 255))
+            rThresholded = Segmenter.threshold(image, rDist, 'range', (155, 255))
+
+        return image, bThresholded, rThresholded

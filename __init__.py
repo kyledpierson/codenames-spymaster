@@ -6,14 +6,7 @@ from KeycardReader import KeycardReader
 Ideas
  - Canny
 
-if colorSpace is cv2.COLOR_BGR2RGB:
-    lightRed1 = (150, 0, 0)
-    darkRed1 = (255, 70, 100)
-    lightRed2 = (150, 0, 0)
-    darkRed2 = (255, 70, 100)
-    lightBlue = (0, 0, 120)
-    darkBlue = (80, 180, 255)
-elif colorSpace is cv2.COLOR_BGR2HLS:
+if colorSpace is cv2.COLOR_BGR2HLS:
     lightRed1 = (0, 100, 150)
     darkRed1 = (40, 150, 255)
     lightRed2 = (215, 100, 150)
@@ -39,11 +32,11 @@ imageFilenames = [
     'keycard-3.jpg',
     'keycard-4.jpg',
     'keycard-5.jpg',
-    'keycard-6.jpg',
-    'keycard-7.jpg',
-    'keycard-8.jpg',
-    'keycard-dark-1.jpg',
-    'keycard-dark-2.jpg'
+    # 'keycard-6.jpg',
+    # 'keycard-7.jpg',
+    # 'keycard-8.jpg',
+    # 'keycard-dark-1.jpg',
+    # 'keycard-dark-2.jpg'
 ]
 referenceImageFileName = "keycard-reference.webp"
 # ==================================================
@@ -52,10 +45,8 @@ if __name__ == '__main__':
     keycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
-        image, b, r, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
+        image, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
 
         cv2.imwrite(outDir + imageFilename, image)
-        cv2.imwrite(outDir + "b-" + imageFilename, b)
-        cv2.imwrite(outDir + "r-" + imageFilename, r)
         cv2.imwrite(outDir + "b-thresholded-" + imageFilename, bThresholded)
         cv2.imwrite(outDir + "r-thresholded-" + imageFilename, rThresholded)

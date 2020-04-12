@@ -13,7 +13,7 @@ class Segmenter:
         pass
 
     @staticmethod
-    def grabcut(image: Image, maskType: str = 'rectangular', customMask: Tuple = None) -> Image:
+    def grabcut(image: Image, maskType: str, customMask: Tuple = None) -> Image:
         rows, cols = image.shape[:2]
 
         mask = np.zeros((rows, cols), np.uint8)
@@ -102,16 +102,16 @@ class Segmenter:
         return segmentedImage
 
     @staticmethod
-    def threshold(image: Image, thresholdImage: Image, method: str = 'otsu', ranges: Tuple = None) -> Image:
+    def threshold(image: Image, thresholdImage: Image, method: str, colorRange: Tuple = None) -> Image:
         mask = None
         if method == 'adaptive':
             mask = cv2.adaptiveThreshold(thresholdImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 3)
         elif method == 'otsu':
             _, mask = cv2.threshold(thresholdImage, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         elif method == 'range':
-            for lower, upper in ranges:
-                newMask = cv2.inRange(thresholdImage, lower, upper)
-                mask = mask + newMask if mask else newMask
+            lower, upper = colorRange
+            newMask = cv2.inRange(thresholdImage, lower, upper)
+            mask = mask + newMask if mask else newMask
         else:
             raise ValueError(method + ' not implemented')
 
