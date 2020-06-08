@@ -79,7 +79,8 @@ class Segmenter:
         cv2.grabCut(image, mask, customMask, bgModel, fgModel, 2, mode)
 
         mask = np.where((mask == 0) | (mask == 2), 0, 1).astype(np.uint8)
-        segmentedImage = image * mask[:, :, np.newaxis]
+        segmentedImage = image.copy()
+        segmentedImage[mask == 0] = (255, 255, 255)
 
         return segmentedImage
 

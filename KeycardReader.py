@@ -7,6 +7,14 @@ from imageprocessing.Morpher import Morpher
 from imageprocessing.Preprocessor import Preprocessor
 from imageprocessing.Segmenter import Segmenter
 
+blueMean = [200, 125, 25]
+blueRange = ((120, 0, 0), (255, 180, 80))
+redMean = [50, 50, 200]
+redRange = ((0, 0, 150), (100, 70, 255))
+blackMean = [0, 0, 0]
+blackRange = ((0, 0, 0), (50, 50, 50))
+distThreshold = (155, 255)
+
 
 class KeycardReader:
     def __init__(self, referenceImageFileName: str):
@@ -18,25 +26,18 @@ class KeycardReader:
         image = Segmenter.grabcut(image, 'rectangular')
         image, resizedTargetImage = Preprocessor.resizeToSameSize(image, self.referenceImage, 500, 500)
 
-        if method is 'auto':
-            bDist = image[:, :, 0].copy()
-            rDist = image[:, :, 2].copy()
+        if method is 'adaptive' or method is 'otsu' or method is 'range':
+            dist = image[:, :, 0].copy()
 
             rows, cols = image.shape[:2]
             for i in range(rows):
                 for j in range(cols):
-                    bDist[i, j] = max(0, 255 - np.linalg.norm(np.array([200, 125, 25]) - np.array(image[i, j])))
-                    rDist[i, j] = max(0, 255 - np.linalg.norm(np.array([50, 50, 200]) - np.array(image[i, j])))
+                    dist[i, j] = max(0, 255 - np.linalg.norm(np.array(blackMean) - np.array(image[i, j])))
 
-            bThresholded = Segmenter.threshold(image, bDist, 'range', (155, 255))
-            rThresholded = Segmenter.threshold(image, rDist, 'range', (155, 255))
+            thresholded = Segmenter.threshold(image, dist, method, distThreshold)
         elif method is 'ranges':
-            bRange = ((120, 0, 0), (255, 180, 80))
-            rRange = ((0, 0, 150), (100, 70, 255))
-
-            bThresholded = Segmenter.threshold(image, image, 'range', bRange)
-            rThresholded = Segmenter.threshold(image, image, 'range', rRange)
+            thresholded = Segmenter.threshold(image, image, 'range', blackRange)
         else:
             raise ValueError(method + ' method not implemented')
 
-        return image, bThresholded, rThresholded
+        return image, thresholded

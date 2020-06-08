@@ -38,17 +38,13 @@ imageFilenames = [
     # 'keycard-dark-1.jpg',
     # 'keycard-dark-2.jpg'
 ]
-referenceImageFileName = "keycard-reference.webp"
+referenceImageFileName = 'keycard-reference.webp'
 # ==================================================
 
 if __name__ == '__main__':
     keycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
-        # method = 'ranges'
-        method = 'auto'
-        image, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename, method)
-
+        image, thresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename, 'otsu')
         cv2.imwrite(outDir + imageFilename, image)
-        cv2.imwrite(outDir + "b-thresholded-" + imageFilename, bThresholded)
-        cv2.imwrite(outDir + "r-thresholded-" + imageFilename, rThresholded)
+        cv2.imwrite(outDir + imageFilename + '-thresholded.jpg', thresholded)

@@ -28,8 +28,8 @@ class Filterer:
 
     @staticmethod
     def mapHistogram(image: Image, targetImage: Image, fromColorSpace: int, toColorSpace: int) -> Image:
-        convertedImage = cv2.cvtColor(image, fromColorSpace).astype("float32")
-        convertedTargetImage = cv2.cvtColor(targetImage, fromColorSpace).astype("float32")
+        convertedImage = cv2.cvtColor(image, fromColorSpace).astype('float32')
+        convertedTargetImage = cv2.cvtColor(targetImage, fromColorSpace).astype('float32')
 
         c1Mean, c1Std, c2Mean, c2Std, c3Mean, c3Std = Filterer.__computeImageStats(convertedImage)
         c1MeanTarget, c1StdTarget, c2MeanTarget, c2StdTarget, c3MeanTarget, c3StdTarget = \
@@ -41,7 +41,7 @@ class Filterer:
         c3 = np.clip((c3Std / c3StdTarget) * (c3 - c3Mean) + c3MeanTarget, 0, 255)
 
         coloredConvertedImage = cv2.merge([c1, c2, c3])
-        coloredImage = cv2.cvtColor(coloredConvertedImage.astype("uint8"), toColorSpace)
+        coloredImage = cv2.cvtColor(coloredConvertedImage.astype('uint8'), toColorSpace)
 
         return coloredImage
 

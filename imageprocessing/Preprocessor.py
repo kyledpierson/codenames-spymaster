@@ -26,15 +26,15 @@ class Preprocessor:
         right = ceil(horizontal / 2)
         if vertical < 0:
             resizedImage = cv2.copyMakeBorder(resizedImage, borderType=cv2.BORDER_CONSTANT,
-                                              top=abs(top), bottom=abs(bottom), left=0, right=0)
+                                              top=abs(top), bottom=abs(bottom), left=0, right=0, value=(255, 255, 255))
         else:
             resizedTargetImage = cv2.copyMakeBorder(resizedTargetImage, borderType=cv2.BORDER_CONSTANT,
-                                                    top=top, bottom=bottom, left=0, right=0)
+                                                    top=top, bottom=bottom, left=0, right=0, value=(255, 255, 255))
         if horizontal < 0:
             resizedImage = cv2.copyMakeBorder(resizedImage, borderType=cv2.BORDER_CONSTANT,
-                                              top=0, bottom=0, left=abs(left), right=abs(right))
+                                              top=0, bottom=0, left=abs(left), right=abs(right), value=(255, 255, 255))
         else:
             resizedTargetImage = cv2.copyMakeBorder(resizedTargetImage, borderType=cv2.BORDER_CONSTANT,
-                                                    top=0, bottom=0, left=left, right=right)
+                                                    top=0, bottom=0, left=left, right=right, value=(255, 255, 255))
 
         return resizedImage, resizedTargetImage
