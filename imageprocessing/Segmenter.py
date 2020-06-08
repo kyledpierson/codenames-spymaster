@@ -50,7 +50,7 @@ class Segmenter:
                 isLikelyFg = lambda i, j, dist: i < likelyFgYmin or i > likelyFgYmax or \
                                                 j < likelyFgXmin or j > likelyFgXmax
 
-            else:
+            elif maskType is 'circular':
                 likelyBg = midRow if midRow > midCol else midCol
                 likelyFg = (2. / 3.) * likelyBg
                 fg = (1. / 3.) * likelyBg
@@ -58,6 +58,8 @@ class Segmenter:
                 isBg = lambda i, j, dist: dist > likelyBg
                 isLikelyBg = lambda i, j, dist: dist > likelyFg
                 isLikelyFg = lambda i, j, dist: dist > fg
+            else:
+                raise ValueError(maskType + ' mask not implemented')
 
             for i in range(rows):
                 for j in range(cols):
@@ -113,7 +115,7 @@ class Segmenter:
             newMask = cv2.inRange(thresholdImage, lower, upper)
             mask = mask + newMask if mask else newMask
         else:
-            raise ValueError(method + ' not implemented')
+            raise ValueError(method + ' threshold not implemented')
 
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
         mask = cv2.erode(mask, kernel)

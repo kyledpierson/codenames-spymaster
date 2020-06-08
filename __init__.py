@@ -45,7 +45,9 @@ if __name__ == '__main__':
     keycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
-        image, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
+        # method = 'ranges'
+        method = 'auto'
+        image, bThresholded, rThresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename, method)
 
         cv2.imwrite(outDir + imageFilename, image)
         cv2.imwrite(outDir + "b-thresholded-" + imageFilename, bThresholded)

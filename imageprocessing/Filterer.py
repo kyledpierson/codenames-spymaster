@@ -46,7 +46,7 @@ class Filterer:
         return coloredImage
 
     @staticmethod
-    def enhanceEdges(image: Image, action: str, kernel: Image = None) -> Image:
+    def enhanceEdges(image: Image, action: str, kernel: np.array = None) -> Image:
         enhancedImage = cv2.edgePreservingFilter(image)
         # Alternative: cv2.bilateralFilter(image, 5, 50, 50)
 
@@ -66,7 +66,7 @@ class Filterer:
                                    [-1, +2, +2, +2, -1],
                                    [-1, -1, -1, -1, -1]]) / 8.0
             else:
-                raise ValueError(action + ' not implemented')
+                raise ValueError(action + ' filter not implemented')
 
         enhancedImage = cv2.filter2D(enhancedImage, -1, kernel)
         return enhancedImage
