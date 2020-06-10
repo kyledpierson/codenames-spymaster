@@ -1,8 +1,12 @@
 import cv2
+import numpy as np
 
 from KeycardReader import KeycardReader
 
 """
+TODO
+ - Evaluate all the places I'm doing a gaussian blur
+
 Ideas
  - Canny
 
@@ -21,6 +25,18 @@ cv2.imshow("Shape image", shapeImage)
 cv2.imshow("Grabcut image", grabcutImage)
 cv2.imshow("Mask Image", maskImage)
 cv2.waitKey(0)
+
+xStep = int(np.ceil((bottomRightX - topLeftX) / 5))
+yStep = int(np.ceil((bottomRightY - topLeftY) / 5))
+
+for i in range(topLeftX, bottomRightX, xStep):
+    for j in range(topLeftY, bottomRightY, yStep):
+        cv2.drawContours(image, np.array([
+            [[i, j], [i + xStep, j]],
+            [[i, j], [i, j + yStep]],
+            [[i + xStep, j], [i + xStep, j + yStep]],
+            [[i, j + yStep], [i + xStep, j + yStep]]
+        ]), -1, (0, 255, 0), 2)
 """
 
 # ==================================================
@@ -28,10 +44,10 @@ inDir = 'inImages/'
 outDir = 'outImages/'
 imageFilenames = [
     'keycard-1.jpg',
-    'keycard-2.jpg',
-    'keycard-3.jpg',
-    'keycard-4.jpg',
-    'keycard-5.jpg',
+    # 'keycard-2.jpg',
+    # 'keycard-3.jpg',
+    # 'keycard-4.jpg',
+    # 'keycard-5.jpg',
     # 'keycard-6.jpg',
     # 'keycard-7.jpg',
     # 'keycard-8.jpg',
@@ -45,6 +61,6 @@ if __name__ == '__main__':
     keycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
-        image, thresholded = keycardReader.extractKeycardDescriptor(inDir + imageFilename, 'otsu')
+        descriptor, image = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
         cv2.imwrite(outDir + imageFilename, image)
-        cv2.imwrite(outDir + imageFilename + '-thresholded.jpg', thresholded)
+        cv2.waitKey(0)

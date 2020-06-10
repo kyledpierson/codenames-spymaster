@@ -8,13 +8,72 @@ import numpy as np
 Image = np.ndarray
 
 
+class Point:
+    x: float = 0
+    y: float = 0
+
+    def __init__(self, x: float = 0, y: float = 0):
+        self.x = x
+        self.y = y
+
+    def midpoint(self, other: 'Point') -> 'Point':
+        return Point((self.x + other.x) / 2, (self.y + other.y) / 2)
+
+    def divide(self, other: 'Point', dim: int) -> np.array:
+        x = np.histogram_bin_edges([self.x, other.x], dim)
+        y = np.histogram_bin_edges([self.y, other.y], dim)
+        return np.array([Point(x[i], y[i]) for i in range(len(x))])
+
+    def __str__(self):
+        return "(" + str(self.x) + ", " + str(self.y) + ")"
+
+
+class BoundingBox:
+    box: np.array = np.array([Point(), Point()], dtype=Point)
+
+    def __init__(self, topLeft: Point = Point(), bottomRight: Point = Point()):
+        self.box = np.array([topLeft, bottomRight], dtype=Point)
+
+    def topLeft(self) -> Point:
+        return self.box[0]
+
+    def bottomRight(self) -> Point:
+        return self.box[1]
+
+    def centroid(self) -> Point:
+        return self.topLeft().midpoint(self.bottomRight())
+
+    def split(self, axis: str = 'x') -> 'BoundingBox':
+        centroid: Point = self.centroid()
+        if axis is 'x':
+            self.box[1].x = centroid.x
+            return BoundingBox(Point(centroid.x, self.topLeft().y), self.bottomRight())
+        elif axis is 'y':
+            self.box[1].y = centroid.y
+            return BoundingBox(Point(self.topLeft().x, centroid.y), self.bottomRight())
+        else:
+            raise ValueError(axis + ' axis not implemented, must specify x or y')
+
+    def divide(self, dim: int) -> np.array:
+        edges: np.array = self.topLeft().divide(self.bottomRight(), dim)
+        boxes: np.array = np.array([[BoundingBox() for i in range(dim)] for j in range(dim)], dtype=BoundingBox)
+        for i in range(dim):
+            for j in range(dim):
+                boxes[i, j].box = np.array([Point(edges[j].x, edges[i].y), Point(edges[j + 1].x, edges[i + 1].y)])
+        return boxes
+
+    def __str__(self):
+        return "[" + str(self.topLeft()) + ", " + str(self.bottomRight()) + "]"
+
+
 class Segmenter:
     def __init__(self):
         pass
 
     @staticmethod
     def grabcut(image: Image, maskType: str, customMask: Tuple = None) -> Image:
-        rows, cols = image.shape[:2]
+        segmentedImage = image.copy()
+        rows, cols = segmentedImage.shape[:2]
 
         mask = np.zeros((rows, cols), np.uint8)
         maskImage = np.zeros((rows, cols), np.uint8)
@@ -76,10 +135,9 @@ class Segmenter:
             maskImage = mask * 85
             mode = cv2.GC_INIT_WITH_MASK
 
-        cv2.grabCut(image, mask, customMask, bgModel, fgModel, 2, mode)
+        cv2.grabCut(segmentedImage, mask, customMask, bgModel, fgModel, 2, mode)
 
         mask = np.where((mask == 0) | (mask == 2), 0, 1).astype(np.uint8)
-        segmentedImage = image.copy()
         segmentedImage[mask == 0] = (255, 255, 255)
 
         return segmentedImage
@@ -127,27 +185,37 @@ class Segmenter:
         return thresholdedImage
 
     @staticmethod
-    def drawRectangles(image: Image) -> Image:
-        processedImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        processedImage = cv2.GaussianBlur(processedImage, (3, 3), 0)
-        _, processedImage = cv2.threshold(processedImage, 100, 255, cv2.THRESH_BINARY)
+    def drawRectangles(image: Image) -> Tuple:
+        if len(image.shape) < 3:
+            binaryImage = image.copy()
+            processedImage = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        else:
+            binaryImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            processedImage = image.copy()
+        binaryImage = cv2.GaussianBlur(binaryImage, (3, 3), 0)
+        _, binaryImage = cv2.threshold(binaryImage, 55, 255, cv2.THRESH_BINARY)
 
-        _, contours, hierarchy = cv2.findContours(processedImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+        outerBox = BoundingBox()
+        innerBoxes = np.array([], dtype=BoundingBox)
         for c in contours:
             area = cv2.contourArea(c)
-            if area > 1000:
-                perimeter = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, 0.05 * perimeter, True)
+            perimeter = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.05 * perimeter, True)
 
-                if len(approx) == 4:
-                    (x, y, w, h) = cv2.boundingRect(approx)
-                    ar = w / float(h)
+            if len(approx) == 4:
+                (x, y, w, h) = cv2.boundingRect(approx)
+                squareRatio = w / float(h)
 
-                    if 0.95 <= ar <= 1.05:
-                        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+                if 0.95 <= squareRatio <= 1.05:
+                    if 5000 < area:
+                        outerBox.box = np.array([Point(x, y), Point(x + w - 1, y + h - 1)])
+                    elif 1000 < area < 5000:
+                        np.append(innerBoxes, [BoundingBox(Point(x, y), Point(x + w - 1, y + h - 1))])
+                    cv2.drawContours(processedImage, [c], -1, (0, 255, 0), 2)
 
-        return image
+        return processedImage, outerBox, innerBoxes
 
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #

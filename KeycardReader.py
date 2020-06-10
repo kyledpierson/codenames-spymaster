@@ -5,7 +5,10 @@ from typing import Tuple
 from imageprocessing.Filterer import Filterer
 from imageprocessing.Morpher import Morpher
 from imageprocessing.Preprocessor import Preprocessor
-from imageprocessing.Segmenter import Segmenter
+from imageprocessing.Segmenter import Point, BoundingBox, Segmenter
+from KeycardDescriptor import Team, KeycardDescriptor
+
+Image = np.ndarray
 
 blueMean = [200, 125, 25]
 blueRange = ((120, 0, 0), (255, 180, 80))
@@ -16,28 +19,54 @@ blackRange = ((0, 0, 0), (50, 50, 50))
 distThreshold = (155, 255)
 
 
+def xCoord(box):
+    return box[0][0]
+
+
+def yCoord(box):
+    return box[0][1]
+
+
 class KeycardReader:
     def __init__(self, referenceImageFileName: str):
         self.referenceImage = cv2.imread(referenceImageFileName)
         self.referenceImage = Segmenter.grabcut(self.referenceImage, 'rectangular')
 
-    def extractKeycardDescriptor(self, path: str, method: str = 'auto') -> Tuple:
+    def extractKeycardDescriptor(self, path: str) -> Tuple:
+        descriptor = KeycardDescriptor()
+
         image = cv2.imread(path)
-        image = Segmenter.grabcut(image, 'rectangular')
-        image, resizedTargetImage = Preprocessor.resizeToSameSize(image, self.referenceImage, 500, 500)
+        rows, cols = image.shape[:2]
+        segmentedImage = Segmenter.grabcut(image, 'rectangular')
+        segmentedImage, _ = Preprocessor.resizeToSameSize(segmentedImage, self.referenceImage, 500, 500)
 
-        if method is 'adaptive' or method is 'otsu' or method is 'range':
-            dist = image[:, :, 0].copy()
+        blackResponseImage = segmentedImage[:, :, 0].copy()
+        for i in range(rows):
+            for j in range(cols):
+                blackResponseImage[i, j] = max(0, 255 - np.linalg.norm(
+                    np.array(blackMean) - np.array(segmentedImage[i, j])
+                ))
 
-            rows, cols = image.shape[:2]
-            for i in range(rows):
-                for j in range(cols):
-                    dist[i, j] = max(0, 255 - np.linalg.norm(np.array(blackMean) - np.array(image[i, j])))
+        thresholdedImage = Segmenter.threshold(segmentedImage, blackResponseImage, 'otsu', distThreshold)
+        rectangleImage, outerBox, innerBoxes = Segmenter.drawRectangles(blackResponseImage)
 
-            thresholded = Segmenter.threshold(image, dist, method, distThreshold)
-        elif method is 'ranges':
-            thresholded = Segmenter.threshold(image, image, 'range', blackRange)
-        else:
-            raise ValueError(method + ' method not implemented')
+        # innerBoxes = sorted(sorted(innerBoxes, key=xCoord), key=yCoord)
+        # b = 0
+        # g = 0
+        # r = 0
+        # for i in range(len(innerBoxes)):
+        #     box = innerBoxes[i]
+        #
+        #     b += 10
+        #     g += 10
+        #     r += 10
+        #     rectangleImage[box[0][1]:box[1][1], box[0][0]:box[1][0]] = (b, g, r)
+        #
+        #     cell = segmentedImage[box[0][1]:box[1][1], box[0][0]:box[1][0]]
+        #     cellMean = np.mean(np.mean(cell, 0), 0)
+        #     blueSim = np.linalg.norm(np.array(blueMean) - np.array(cellMean))
+        #     redSim = np.linalg.norm(np.array(redMean) - np.array(cellMean))
+        #     team = Team.BLUE if blueSim < redSim else Team.RED
+        #     descriptor.set1D(i, team)
 
-        return image, thresholded
+        return descriptor, rectangleImage
