@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 
 from KeycardReader import KeycardReader
 
@@ -29,13 +28,13 @@ cv2.waitKey(0)
 xStep = int(np.ceil((bottomRightX - topLeftX) / 5))
 yStep = int(np.ceil((bottomRightY - topLeftY) / 5))
 
-for i in range(topLeftX, bottomRightX, xStep):
-    for j in range(topLeftY, bottomRightY, yStep):
+for row in range(topLeftX, bottomRightX, xStep):
+    for col in range(topLeftY, bottomRightY, yStep):
         cv2.drawContours(image, np.array([
-            [[i, j], [i + xStep, j]],
-            [[i, j], [i, j + yStep]],
-            [[i + xStep, j], [i + xStep, j + yStep]],
-            [[i, j + yStep], [i + xStep, j + yStep]]
+            [[row, col], [row + xStep, col]],
+            [[row, col], [row, col + yStep]],
+            [[row + xStep, col], [row + xStep, col + yStep]],
+            [[row, col + yStep], [row + xStep, col + yStep]]
         ]), -1, (0, 255, 0), 2)
 """
 
@@ -58,9 +57,10 @@ referenceImageFileName = 'keycard-reference.webp'
 # ==================================================
 
 if __name__ == '__main__':
-    keycardReader = KeycardReader(referenceImageFileName)
+    keycardReader: KeycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
         descriptor, image = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
         cv2.imwrite(outDir + imageFilename, image)
+        print(descriptor.grid)
         cv2.waitKey(0)

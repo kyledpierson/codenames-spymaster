@@ -1,4 +1,4 @@
-from math import exp, pow
+from math import exp, pow, sqrt
 from typing import Tuple
 
 import cv2
@@ -16,6 +16,12 @@ class Point:
         self.x = x
         self.y = y
 
+    def __str__(self):
+        return "(" + str(self.x) + ", " + str(self.y) + ")"
+
+    def distance(self, other: 'Point') -> float:
+        return sqrt(pow(self.x - other.x, 2) + pow(self.y - other.y, 2))
+
     def midpoint(self, other: 'Point') -> 'Point':
         return Point((self.x + other.x) / 2, (self.y + other.y) / 2)
 
@@ -24,15 +30,15 @@ class Point:
         y = np.histogram_bin_edges([self.y, other.y], dim)
         return np.array([Point(x[i], y[i]) for i in range(len(x))])
 
-    def __str__(self):
-        return "(" + str(self.x) + ", " + str(self.y) + ")"
-
 
 class BoundingBox:
-    box: np.array = np.array([Point(), Point()], dtype=Point)
+    box: np.array = None
 
     def __init__(self, topLeft: Point = Point(), bottomRight: Point = Point()):
         self.box = np.array([topLeft, bottomRight], dtype=Point)
+
+    def __str__(self):
+        return "[" + str(self.topLeft()) + ", " + str(self.bottomRight()) + "]"
 
     def topLeft(self) -> Point:
         return self.box[0]
@@ -61,9 +67,6 @@ class BoundingBox:
             for j in range(dim):
                 boxes[i, j].box = np.array([Point(edges[j].x, edges[i].y), Point(edges[j + 1].x, edges[i + 1].y)])
         return boxes
-
-    def __str__(self):
-        return "[" + str(self.topLeft()) + ", " + str(self.bottomRight()) + "]"
 
 
 class Segmenter:
@@ -185,7 +188,7 @@ class Segmenter:
         return thresholdedImage
 
     @staticmethod
-    def drawRectangles(image: Image) -> Tuple:
+    def drawSquares(image: Image) -> Tuple:
         if len(image.shape) < 3:
             binaryImage = image.copy()
             processedImage = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -197,25 +200,20 @@ class Segmenter:
 
         contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        outerBox = BoundingBox()
-        innerBoxes = np.array([], dtype=BoundingBox)
-        for c in contours:
-            area = cv2.contourArea(c)
-            perimeter = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.05 * perimeter, True)
+        outerBoxes = np.array([[BoundingBox()]])
+        Segmenter.__findSquares(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
-            if len(approx) == 4:
-                (x, y, w, h) = cv2.boundingRect(approx)
-                squareRatio = w / float(h)
+        referenceBoxes = outerBoxes[0, 0].divide(5)
+        innerBoxes = np.array([[BoundingBox() for col in range(5)] for row in range(5)])
+        Segmenter.__findSquares(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
 
-                if 0.95 <= squareRatio <= 1.05:
-                    if 5000 < area:
-                        outerBox.box = np.array([Point(x, y), Point(x + w - 1, y + h - 1)])
-                    elif 1000 < area < 5000:
-                        np.append(innerBoxes, [BoundingBox(Point(x, y), Point(x + w - 1, y + h - 1))])
-                    cv2.drawContours(processedImage, [c], -1, (0, 255, 0), 2)
+        for row in range(5):
+            for col in range(5):
+                box = innerBoxes[row, col]
+                if box.bottomRight().x == 0:
+                    Segmenter.__inferBoxFromSurroundingBoxes(innerBoxes, row, col)
 
-        return processedImage, outerBox, innerBoxes
+        return processedImage, innerBoxes
 
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
@@ -238,3 +236,109 @@ class Segmenter:
                 pow(mu_2 - pixel[1], 2) / (2 * pow(sigma_2, 2)) +
                 pow(mu_3 - pixel[2], 2) / (2 * pow(sigma_3, 2))))
         return n * d * 255
+
+    @staticmethod
+    def __findSquares(boxes: np.array, referenceBoxes: np.array, contours: np.array, minArea: int, maxArea: int,
+                      processedImage: Image):
+        for c in contours:
+            area = cv2.contourArea(c)
+            if minArea < area < maxArea:
+                perimeter = cv2.arcLength(c, True)
+                approx = cv2.approxPolyDP(c, 0.05 * perimeter, True)
+
+                if len(approx) == 4:
+                    (x, y, w, h) = cv2.boundingRect(approx)
+                    squareRatio = w / float(h)
+
+                    if 0.95 <= squareRatio <= 1.05:
+                        box = BoundingBox(Point(x, y), Point(x + w - 1, y + h - 1))
+                        index = Segmenter.__nearestBox(box, referenceBoxes)
+                        boxes[index] = box
+                        cv2.drawContours(processedImage, [c], -1, (0, 255, 0), 2)
+
+    @staticmethod
+    def __nearestBox(box: BoundingBox, boxes: np.array) -> Tuple:
+        nearestDistance: float = float('inf')
+        nearestIndex: Tuple = (0, 0)
+
+        rows, cols = boxes.shape
+        for row in range(rows):
+            for col in range(cols):
+                distance: float = box.centroid().distance(boxes[row, col].centroid())
+                if distance < nearestDistance:
+                    nearestDistance = distance
+                    nearestIndex = (row, col)
+
+        return nearestIndex
+
+    @staticmethod
+    def __inferBoxFromSurroundingBoxes(innerBoxes: np.array, row: int, col: int):
+        topLeftXs = np.array([])
+        topLeftYs = np.array([])
+        bottomRightXs = np.array([])
+        bottomRightYs = np.array([])
+
+        # ABOVE
+        if row > 0:
+            newRow = row - 1
+            if col > 0:
+                box = innerBoxes[newRow, col - 1]
+                if box.bottomRight().x is not 0:
+                    topLeftXs = np.append(topLeftXs, [box.bottomRight().x])
+                    topLeftYs = np.append(topLeftYs, [box.bottomRight().y])
+
+            box = innerBoxes[newRow, col]
+            if box.bottomRight().x is not 0:
+                topLeftXs = np.append(topLeftXs, [box.topLeft().x])
+                bottomRightXs = np.append(bottomRightXs, [box.bottomRight().x])
+                topLeftYs = np.append(topLeftYs, [box.bottomRight().y])
+
+            if col < 4:
+                box = innerBoxes[newRow, col + 1]
+                if box.bottomRight().x is not 0:
+                    bottomRightXs = np.append(bottomRightXs, [box.topLeft().x])
+                    topLeftYs = np.append(topLeftYs, [box.bottomRight().y])
+
+        # MIDDLE
+        if col > 0:
+            box = innerBoxes[row, col - 1]
+            if box.bottomRight().x is not 0:
+                topLeftXs = np.append(topLeftXs, [box.bottomRight().x])
+                topLeftYs = np.append(topLeftYs, [box.topLeft().y])
+                bottomRightYs = np.append(bottomRightYs, [box.bottomRight().y])
+
+        if col < 4:
+            box = innerBoxes[row, col + 1]
+            if box.bottomRight().x is not 0:
+                bottomRightXs = np.append(bottomRightXs, [box.topLeft().x])
+                topLeftYs = np.append(topLeftYs, [box.topLeft().y])
+                bottomRightYs = np.append(bottomRightYs, [box.bottomRight().y])
+
+        # BELOW
+        if row < 4:
+            newRow = row + 1
+            if col > 0:
+                box = innerBoxes[newRow, col - 1]
+                if box.bottomRight().x is not 0:
+                    topLeftXs = np.append(topLeftXs, [box.bottomRight().x])
+                    bottomRightYs = np.append(bottomRightYs, [box.topLeft().y])
+
+            box = innerBoxes[newRow, col]
+            if box.bottomRight().x is not 0:
+                topLeftXs = np.append(topLeftXs, [box.topLeft().x])
+                bottomRightXs = np.append(bottomRightXs, [box.bottomRight().x])
+                bottomRightYs = np.append(bottomRightYs, [box.topLeft().y])
+
+            if col < 4:
+                box = innerBoxes[newRow, col + 1]
+                if box.bottomRight().x is not 0:
+                    bottomRightXs = np.append(bottomRightXs, [box.topLeft().x])
+                    bottomRightYs = np.append(bottomRightYs, [box.topLeft().y])
+
+        topLeftX = np.mean(topLeftXs)
+        topLeftY = np.mean(topLeftYs)
+        bottomRightX = np.mean(bottomRightXs)
+        bottomRightY = np.mean(bottomRightYs)
+
+        innerBoxes[row, col] = BoundingBox(Point(round(topLeftX), round(topLeftY)),
+                                           Point(round(bottomRightX), round(bottomRightY)))

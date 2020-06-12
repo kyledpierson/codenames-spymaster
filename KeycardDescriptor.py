@@ -1,3 +1,5 @@
+import numpy as np
+
 from enum import Enum
 from math import floor
 
@@ -10,13 +12,13 @@ class Team(Enum):
 
 
 class KeycardDescriptor:
-    grid = [[Team.NEUTRAL for i in range(5)] for j in range(5)]
+    grid: np.array = None
 
-    def __init__(self):
-        pass
+    def __init__(self, dim: int):
+        self.grid = np.array([[Team.NEUTRAL for col in range(dim)] for row in range(dim)])
 
     def set1D(self, pos: int, team: Team):
-        self.grid[int(floor(pos / 5))][pos % 5] = team
+        self.grid[int(floor(pos / 5)), pos % 5] = team
 
     def set2D(self, row: int, col: int, team: Team):
-        self.grid[row][col] = team
+        self.grid[row, col] = team
