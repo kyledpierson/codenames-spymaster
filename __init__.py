@@ -1,6 +1,7 @@
 import cv2
 
 from KeycardReader import KeycardReader
+from KeycardDescriptor import KeycardDescriptor
 
 """
 TODO
@@ -16,51 +17,32 @@ if colorSpace is cv2.COLOR_BGR2HLS:
     darkRed2 = (255, 150, 255)
     lightBlue = (115, 75, 120)
     darkBlue = (155, 130, 255)
-
-cv2.imshow("CLAHE image", claheImage)
-cv2.imshow("Edge image", edgeImage)
-cv2.imshow("Color image", colorImage)
-cv2.imshow("Shape image", shapeImage)
-cv2.imshow("Grabcut image", grabcutImage)
-cv2.imshow("Mask Image", maskImage)
-cv2.waitKey(0)
-
-xStep = int(np.ceil((bottomRightX - topLeftX) / 5))
-yStep = int(np.ceil((bottomRightY - topLeftY) / 5))
-
-for row in range(topLeftX, bottomRightX, xStep):
-    for col in range(topLeftY, bottomRightY, yStep):
-        cv2.drawContours(image, np.array([
-            [[row, col], [row + xStep, col]],
-            [[row, col], [row, col + yStep]],
-            [[row + xStep, col], [row + xStep, col + yStep]],
-            [[row, col + yStep], [row + xStep, col + yStep]]
-        ]), -1, (0, 255, 0), 2)
 """
 
 # ==================================================
-inDir = 'inImages/'
-outDir = 'outImages/'
-imageFilenames = [
+inDir: str = 'inImages/'
+outDir: str = 'outImages/'
+imageFilenames: list = [
     'keycard-1.jpg',
-    # 'keycard-2.jpg',
-    # 'keycard-3.jpg',
-    # 'keycard-4.jpg',
-    # 'keycard-5.jpg',
-    # 'keycard-6.jpg',
-    # 'keycard-7.jpg',
-    # 'keycard-8.jpg',
+    'keycard-2.jpg',
+    'keycard-3.jpg',
+    # 'keycard-light-1.jpg',
     # 'keycard-dark-1.jpg',
-    # 'keycard-dark-2.jpg'
+    # 'keycard-dark-2.jpg',
+    # 'keycard-noborder-1.jpg',
+    # 'keycard-noborder-2.jpg',
+    # 'keycard-noborder-3.jpg',
+    # 'keycard-offcenter-1.jpg',
+    # 'keycard-offcenter-2.jpg',
+    # 'keycard-offcenter-3.jpg',
+    # 'keycard-offcenter-4.jpg'
 ]
-referenceImageFileName = 'keycard-reference.webp'
+referenceImageFileName: str = 'keycard-reference.webp'
 # ==================================================
 
 if __name__ == '__main__':
     keycardReader: KeycardReader = KeycardReader(referenceImageFileName)
 
     for imageFilename in imageFilenames:
-        descriptor, image = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
-        cv2.imwrite(outDir + imageFilename, image)
+        descriptor: KeycardDescriptor = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
         print(descriptor.grid)
-        cv2.waitKey(0)

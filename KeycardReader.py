@@ -1,58 +1,70 @@
 import cv2
+import imutils
 import numpy as np
 from typing import Tuple
 
 from imageprocessing.Preprocessor import Preprocessor
-from imageprocessing.Segmenter import Segmenter
+from imageprocessing.Segmenter import Point, BoundingBox, Segmenter
 from KeycardDescriptor import Team, KeycardDescriptor
 
 Image = np.ndarray
 
-blueMean = [200, 125, 25]
-blueRange = ((120, 0, 0), (255, 180, 80))
-redMean = [50, 50, 200]
-redRange = ((0, 0, 150), (100, 70, 255))
-blackMean = [0, 0, 0]
-blackRange = ((0, 0, 0), (50, 50, 50))
-distThreshold = (155, 255)
+blackMean: np.array = np.array([0, 0, 0])
+blueMean: np.array = np.array([200, 125, 25])
+redMean: np.array = np.array([50, 50, 200])
+tanMean: np.array = np.array([215, 220, 210])
+
+blackRange: np.array = np.array([[0, 0, 0], [50, 50, 50]])
+blueRange: np.array = np.array([[120, 0, 0], [255, 180, 80]])
+redRange: np.array = np.array([[0, 0, 150], [100, 70, 255]])
+
+distThreshold: Tuple = (155, 255)
 
 
 class KeycardReader:
     referenceImage: Image = None
 
-    def __init__(self, referenceImageFileName: str):
-        self.referenceImage = cv2.imread(referenceImageFileName)
-        self.referenceImage = Segmenter.grabcut(self.referenceImage, 'rectangular')
+    def __init__(self, referenceImageFileName: str = ''):
+        if referenceImageFileName:
+            self.referenceImage = cv2.imread(referenceImageFileName)
+            self.referenceImage = Segmenter.grabcut(self.referenceImage, 'rectangular')
 
-    def extractKeycardDescriptor(self, path: str) -> Tuple:
-        descriptor: KeycardDescriptor = KeycardDescriptor(5)
+    def extractKeycardDescriptor(self, path: str) -> KeycardDescriptor:
+        descriptor: KeycardDescriptor = KeycardDescriptor()
 
         image: Image = cv2.imread(path)
-        rows, cols = image.shape[:2]
-        segmentedImage = Segmenter.grabcut(image, 'rectangular')
-        segmentedImage, _ = Preprocessor.resizeToSameSize(segmentedImage, self.referenceImage, 500, 500)
+        segmentedImage: Image = Segmenter.grabcut(image, 'rectangular')
+        if self.referenceImage is None:
+            segmentedImage = imutils.resize(segmentedImage, 500, 500)
+        else:
+            segmentedImage, _ = Preprocessor.resizeToSameSize(segmentedImage, self.referenceImage, 500, 500)
 
-        blackResponseImage = segmentedImage[:, :, 0].copy()
+        rows, cols = segmentedImage.shape[:2]
+        blackResponseImage: Image = segmentedImage[:, :, 0].copy()
         for row in range(rows):
             for col in range(cols):
-                blackResponseImage[row, col] = max(0, 255 - np.linalg.norm(
-                    np.array(blackMean) - np.array(segmentedImage[row, col])))
+                blackResponseImage[row, col] = max(0, 255 - np.linalg.norm(blackMean - segmentedImage[row, col]))
 
-        thresholdedImage = Segmenter.threshold(segmentedImage, blackResponseImage, 'otsu', distThreshold)
+        thresholdedImage: Image = Segmenter.threshold(segmentedImage, blackResponseImage, 'otsu', distThreshold)
         squareImage, innerBoxes = Segmenter.drawSquares(blackResponseImage)
 
-        for row in range(5):
-            for col in range(5):
-                box = innerBoxes[row, col]
-                topLeft = box.topLeft()
-                bottomRight = box.bottomRight()
-                cell = segmentedImage[int(topLeft.y):int(bottomRight.y), int(topLeft.x):int(bottomRight.x)]
+        rows, cols = innerBoxes.shape
+        for row in range(rows):
+            for col in range(cols):
+                box: BoundingBox = innerBoxes[row, col]
+                topLeft: Point = box.topLeft()
+                bottomRight: Point = box.bottomRight()
+                cell: np.array = segmentedImage[int(topLeft.y):int(bottomRight.y), int(topLeft.x):int(bottomRight.x)]
 
-                cellMean = np.mean(np.mean(cell, 0), 0)
-                blueSim = np.linalg.norm(np.array(blueMean) - np.array(cellMean))
-                redSim = np.linalg.norm(np.array(redMean) - np.array(cellMean))
-                team = Team.BLUE if blueSim < redSim else Team.RED
+                cellMean: np.array = np.mean(np.mean(cell, 0), 0)
+                similarity: np.array = np.array([np.linalg.norm(blackMean - cellMean),
+                                                 np.linalg.norm(blueMean - cellMean),
+                                                 np.linalg.norm(redMean - cellMean),
+                                                 np.linalg.norm(tanMean - cellMean)])
+                teams: np.array = np.array([Team.ASSASSIN, Team.BLUE, Team.RED, Team.NEUTRAL])
+                team: Team = teams[np.argmin(similarity)]
 
                 descriptor.set2D(row, col, team)
 
-        return descriptor, squareImage
+        cv2.imshow("Square image", squareImage)
+        return descriptor

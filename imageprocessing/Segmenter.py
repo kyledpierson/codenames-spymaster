@@ -25,10 +25,10 @@ class Point:
     def midpoint(self, other: 'Point') -> 'Point':
         return Point((self.x + other.x) / 2, (self.y + other.y) / 2)
 
-    def divide(self, other: 'Point', dim: int) -> np.array:
-        x = np.histogram_bin_edges([self.x, other.x], dim)
-        y = np.histogram_bin_edges([self.y, other.y], dim)
-        return np.array([Point(x[i], y[i]) for i in range(len(x))])
+    def divide(self, other: 'Point', dim: int = 5) -> np.array:
+        xs: np.array = np.histogram_bin_edges([self.x, other.x], dim)
+        ys: np.array = np.histogram_bin_edges([self.y, other.y], dim)
+        return np.array([Point(xs[i], ys[i]) for i in range(len(xs))], dtype=Point)
 
 
 class BoundingBox:
@@ -62,10 +62,11 @@ class BoundingBox:
 
     def divide(self, dim: int) -> np.array:
         edges: np.array = self.topLeft().divide(self.bottomRight(), dim)
-        boxes: np.array = np.array([[BoundingBox() for i in range(dim)] for j in range(dim)], dtype=BoundingBox)
-        for i in range(dim):
-            for j in range(dim):
-                boxes[i, j].box = np.array([Point(edges[j].x, edges[i].y), Point(edges[j + 1].x, edges[i + 1].y)])
+        boxes: np.array = np.array([[BoundingBox() for col in range(dim)] for row in range(dim)], dtype=BoundingBox)
+        for row in range(dim):
+            for col in range(dim):
+                boxes[row, col].box = np.array([
+                    Point(edges[col].x, edges[row].y), Point(edges[col + 1].x, edges[row + 1].y)], dtype=Point)
         return boxes
 
 
@@ -148,9 +149,8 @@ class Segmenter:
     @staticmethod
     def mrf(image: Image, costImage: Image, mu_1: float, mu_2: float, mu_3: float,
             sigma_1: float, sigma_2: float, sigma_3: float, pairwiseCost: float) -> Image:
-        costs = [[Segmenter.__gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
-                  for pixel in row] for row in costImage]
-        costs = np.array(costs)
+        costs: np.array = np.array([[Segmenter.__gaussianKernel3D(pixel, mu_1, sigma_1, mu_2, sigma_2, mu_3, sigma_3)
+                                     for pixel in row] for row in costImage])
 
         graph = maxflow.Graph[float]()
         nodes = graph.add_grid_nodes(image.shape[:2])
@@ -196,16 +196,20 @@ class Segmenter:
             binaryImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             processedImage = image.copy()
         binaryImage = cv2.GaussianBlur(binaryImage, (3, 3), 0)
-        _, binaryImage = cv2.threshold(binaryImage, 55, 255, cv2.THRESH_BINARY)
+        _, binaryImage = cv2.threshold(binaryImage, 100, 255, cv2.THRESH_BINARY)
 
         contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        outerBoxes = np.array([[BoundingBox()]])
+        outerBoxes = np.array([[BoundingBox()]], dtype=BoundingBox)
         Segmenter.__findSquares(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
         referenceBoxes = outerBoxes[0, 0].divide(5)
-        innerBoxes = np.array([[BoundingBox() for col in range(5)] for row in range(5)])
+        innerBoxes = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
         Segmenter.__findSquares(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
+
+        cv2.imshow("Binary image", binaryImage)
+        cv2.imshow("Processed image", processedImage)
+        cv2.waitKey(0)
 
         for row in range(5):
             for col in range(5):
@@ -335,10 +339,10 @@ class Segmenter:
                     bottomRightXs = np.append(bottomRightXs, [box.topLeft().x])
                     bottomRightYs = np.append(bottomRightYs, [box.topLeft().y])
 
-        topLeftX = np.mean(topLeftXs)
-        topLeftY = np.mean(topLeftYs)
-        bottomRightX = np.mean(bottomRightXs)
-        bottomRightY = np.mean(bottomRightYs)
+        topLeftX: float = float(np.mean(topLeftXs))
+        topLeftY: float = float(np.mean(topLeftYs))
+        bottomRightX: float = float(np.mean(bottomRightXs))
+        bottomRightY: float = float(np.mean(bottomRightYs))
 
         innerBoxes[row, col] = BoundingBox(Point(round(topLeftX), round(topLeftY)),
                                            Point(round(bottomRightX), round(bottomRightY)))
