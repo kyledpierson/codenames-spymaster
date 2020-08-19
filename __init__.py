@@ -1,5 +1,3 @@
-import cv2
-
 from KeycardReader import KeycardReader
 from KeycardDescriptor import KeycardDescriptor
 
@@ -24,8 +22,8 @@ inDir: str = 'inImages/'
 outDir: str = 'outImages/'
 imageFilenames: list = [
     'keycard-1.jpg',
-    'keycard-2.jpg',
-    'keycard-3.jpg',
+    # 'keycard-2.jpg',
+    # 'keycard-3.jpg',
     # 'keycard-light-1.jpg',
     # 'keycard-dark-1.jpg',
     # 'keycard-dark-2.jpg',

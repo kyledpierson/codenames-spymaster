@@ -1,73 +1,14 @@
-from math import exp, pow, sqrt
+from math import exp, pow
 from typing import Tuple
 
 import cv2
 import maxflow
 import numpy as np
 
+from imageprocessing.geometry.Box import Box
+from imageprocessing.geometry.Point import Point
+
 Image = np.ndarray
-
-
-class Point:
-    x: float = 0
-    y: float = 0
-
-    def __init__(self, x: float = 0, y: float = 0):
-        self.x = x
-        self.y = y
-
-    def __str__(self):
-        return "(" + str(self.x) + ", " + str(self.y) + ")"
-
-    def distance(self, other: 'Point') -> float:
-        return sqrt(pow(self.x - other.x, 2) + pow(self.y - other.y, 2))
-
-    def midpoint(self, other: 'Point') -> 'Point':
-        return Point((self.x + other.x) / 2, (self.y + other.y) / 2)
-
-    def divide(self, other: 'Point', dim: int = 5) -> np.array:
-        xs: np.array = np.histogram_bin_edges([self.x, other.x], dim)
-        ys: np.array = np.histogram_bin_edges([self.y, other.y], dim)
-        return np.array([Point(xs[i], ys[i]) for i in range(len(xs))], dtype=Point)
-
-
-class BoundingBox:
-    box: np.array = None
-
-    def __init__(self, topLeft: Point = Point(), bottomRight: Point = Point()):
-        self.box = np.array([topLeft, bottomRight], dtype=Point)
-
-    def __str__(self):
-        return "[" + str(self.topLeft()) + ", " + str(self.bottomRight()) + "]"
-
-    def topLeft(self) -> Point:
-        return self.box[0]
-
-    def bottomRight(self) -> Point:
-        return self.box[1]
-
-    def centroid(self) -> Point:
-        return self.topLeft().midpoint(self.bottomRight())
-
-    def split(self, axis: str = 'x') -> 'BoundingBox':
-        centroid: Point = self.centroid()
-        if axis is 'x':
-            self.box[1].x = centroid.x
-            return BoundingBox(Point(centroid.x, self.topLeft().y), self.bottomRight())
-        elif axis is 'y':
-            self.box[1].y = centroid.y
-            return BoundingBox(Point(self.topLeft().x, centroid.y), self.bottomRight())
-        else:
-            raise ValueError(axis + ' axis not implemented, must specify x or y')
-
-    def divide(self, dim: int) -> np.array:
-        edges: np.array = self.topLeft().divide(self.bottomRight(), dim)
-        boxes: np.array = np.array([[BoundingBox() for col in range(dim)] for row in range(dim)], dtype=BoundingBox)
-        for row in range(dim):
-            for col in range(dim):
-                boxes[row, col].box = np.array([
-                    Point(edges[col].x, edges[row].y), Point(edges[col + 1].x, edges[row + 1].y)], dtype=Point)
-        return boxes
 
 
 class Segmenter:
@@ -200,11 +141,11 @@ class Segmenter:
 
         contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        outerBoxes: np.array = np.array([[BoundingBox()]], dtype=BoundingBox)
+        outerBoxes: np.array = np.array([[Box()]], dtype=Box)
         Segmenter.__createBoxesFromContours(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
         referenceBoxes = outerBoxes[0, 0].divide(5)
-        innerBoxes: np.array = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
+        innerBoxes: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
         Segmenter.__createBoxesFromContours(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
 
         for row in range(5):
@@ -217,11 +158,11 @@ class Segmenter:
 
     @staticmethod
     def inferBoxesFromGridlines() -> np.array:
-        innerBoxes: np.array = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
+        innerBoxes: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
         for row in range(5):
             for col in range(5):
-                innerBoxes[row, col] = BoundingBox(Point(100 + col * 60, 100 + row * 60),
-                                                   Point(160 + col * 60, 160 + row * 60))
+                innerBoxes[row, col] = Box(Point(100 + col * 60, 100 + row * 60),
+                                           Point(160 + col * 60, 160 + row * 60))
         return innerBoxes
 
     # -------------------------------------------------------- #
@@ -260,13 +201,13 @@ class Segmenter:
                     squareRatio = w / float(h)
 
                     if 0.95 <= squareRatio <= 1.05:
-                        box = BoundingBox(Point(x, y), Point(x + w - 1, y + h - 1))
+                        box = Box(Point(x, y), Point(x + w - 1, y + h - 1))
                         index = Segmenter.__nearestBox(box, referenceBoxes)
                         boxes[index] = box
                         cv2.drawContours(processedImage, [c], -1, (0, 255, 0), 2)
 
     @staticmethod
-    def __nearestBox(box: BoundingBox, boxes: np.array) -> Tuple:
+    def __nearestBox(box: Box, boxes: np.array) -> Tuple:
         nearestDistance: float = float('inf')
         nearestIndex: Tuple = (0, 0)
 
@@ -349,5 +290,5 @@ class Segmenter:
         bottomRightX: float = float(np.mean(bottomRightXs))
         bottomRightY: float = float(np.mean(bottomRightYs))
 
-        innerBoxes[row, col] = BoundingBox(Point(round(topLeftX), round(topLeftY)),
-                                           Point(round(bottomRightX), round(bottomRightY)))
+        innerBoxes[row, col] = Box(Point(round(topLeftX), round(topLeftY)),
+                                   Point(round(bottomRightX), round(bottomRightY)))
