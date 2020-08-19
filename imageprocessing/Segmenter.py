@@ -188,28 +188,24 @@ class Segmenter:
         return thresholdedImage
 
     @staticmethod
-    def drawSquares(image: Image) -> Tuple:
-        if len(image.shape) < 3:
-            binaryImage = image.copy()
-            processedImage = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    def inferBoxesFromBlackRegions(blackResponseImage: Image) -> np.array:
+        if len(blackResponseImage.shape) < 3:
+            binaryImage = blackResponseImage.copy()
+            processedImage = cv2.cvtColor(blackResponseImage, cv2.COLOR_GRAY2BGR)
         else:
-            binaryImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            processedImage = image.copy()
+            binaryImage = cv2.cvtColor(blackResponseImage, cv2.COLOR_BGR2GRAY)
+            processedImage = blackResponseImage.copy()
         binaryImage = cv2.GaussianBlur(binaryImage, (3, 3), 0)
         _, binaryImage = cv2.threshold(binaryImage, 100, 255, cv2.THRESH_BINARY)
 
         contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        outerBoxes = np.array([[BoundingBox()]], dtype=BoundingBox)
-        Segmenter.__findSquares(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
+        outerBoxes: np.array = np.array([[BoundingBox()]], dtype=BoundingBox)
+        Segmenter.__createBoxesFromContours(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
         referenceBoxes = outerBoxes[0, 0].divide(5)
-        innerBoxes = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
-        Segmenter.__findSquares(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
-
-        cv2.imshow("Binary image", binaryImage)
-        cv2.imshow("Processed image", processedImage)
-        cv2.waitKey(0)
+        innerBoxes: np.array = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
+        Segmenter.__createBoxesFromContours(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
 
         for row in range(5):
             for col in range(5):
@@ -217,7 +213,16 @@ class Segmenter:
                 if box.bottomRight().x == 0:
                     Segmenter.__inferBoxFromSurroundingBoxes(innerBoxes, row, col)
 
-        return processedImage, innerBoxes
+        return innerBoxes
+
+    @staticmethod
+    def inferBoxesFromGridlines() -> np.array:
+        innerBoxes: np.array = np.array([[BoundingBox() for col in range(5)] for row in range(5)], dtype=BoundingBox)
+        for row in range(5):
+            for col in range(5):
+                innerBoxes[row, col] = BoundingBox(Point(100 + col * 60, 100 + row * 60),
+                                                   Point(160 + col * 60, 160 + row * 60))
+        return innerBoxes
 
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
@@ -242,8 +247,8 @@ class Segmenter:
         return n * d * 255
 
     @staticmethod
-    def __findSquares(boxes: np.array, referenceBoxes: np.array, contours: np.array, minArea: int, maxArea: int,
-                      processedImage: Image):
+    def __createBoxesFromContours(boxes: np.array, referenceBoxes: np.array, contours: np.array, minArea: int,
+                                  maxArea: int, processedImage: Image):
         for c in contours:
             area = cv2.contourArea(c)
             if minArea < area < maxArea:
@@ -277,10 +282,10 @@ class Segmenter:
 
     @staticmethod
     def __inferBoxFromSurroundingBoxes(innerBoxes: np.array, row: int, col: int):
-        topLeftXs = np.array([])
-        topLeftYs = np.array([])
-        bottomRightXs = np.array([])
-        bottomRightYs = np.array([])
+        topLeftXs: np.array = np.array([])
+        topLeftYs: np.array = np.array([])
+        bottomRightXs: np.array = np.array([])
+        bottomRightYs: np.array = np.array([])
 
         # ABOVE
         if row > 0:

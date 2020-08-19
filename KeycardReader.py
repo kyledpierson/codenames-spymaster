@@ -45,8 +45,9 @@ class KeycardReader:
             for col in range(cols):
                 blackResponseImage[row, col] = max(0, 255 - np.linalg.norm(blackMean - segmentedImage[row, col]))
 
-        thresholdedImage: Image = Segmenter.threshold(segmentedImage, blackResponseImage, 'otsu', distThreshold)
-        squareImage, innerBoxes = Segmenter.drawSquares(blackResponseImage)
+        # thresholdedImage: Image = Segmenter.threshold(segmentedImage, blackResponseImage, 'otsu', distThreshold)
+        # innerBoxes: np.array = Segmenter.inferBoxesFromBlackRegions(blackResponseImage)
+        innerBoxes: np.array = Segmenter.inferBoxesFromGridlines()
 
         rows, cols = innerBoxes.shape
         for row in range(rows):
@@ -66,5 +67,4 @@ class KeycardReader:
 
                 descriptor.set2D(row, col, team)
 
-        cv2.imshow("Square image", squareImage)
         return descriptor
