@@ -1,5 +1,6 @@
-from KeycardReader import KeycardReader
-from KeycardDescriptor import KeycardDescriptor
+from gamecomponents.ComponentReader import ComponentReader
+from gamecomponents.Keycard import Keycard
+from gamecomponents.Wordgrid import Wordgrid
 
 """
 TODO
@@ -20,7 +21,7 @@ if colorSpace is cv2.COLOR_BGR2HLS:
 # ==================================================
 inDir: str = 'inImages/'
 outDir: str = 'outImages/'
-imageFilenames: list = [
+keycardImages: list = [
     'keycard-1.jpg',
     # 'keycard-2.jpg',
     # 'keycard-3.jpg',
@@ -35,12 +36,21 @@ imageFilenames: list = [
     # 'keycard-offcenter-3.jpg',
     # 'keycard-offcenter-4.jpg'
 ]
+wordgridImages = [
+    'word-grid-1.png',
+    # 'word-grid-2.JPG',
+    # 'word-grid-3.jpg',
+    # 'word-grid-4.png',
+]
 referenceImageFileName: str = 'keycard-reference.webp'
 # ==================================================
 
 if __name__ == '__main__':
-    keycardReader: KeycardReader = KeycardReader(referenceImageFileName)
+    reader: ComponentReader = ComponentReader(inDir + referenceImageFileName)
 
-    for imageFilename in imageFilenames:
-        descriptor: KeycardDescriptor = keycardReader.extractKeycardDescriptor(inDir + imageFilename)
-        print(descriptor.grid)
+    for keycardImage in keycardImages:
+        for wordgridImage in wordgridImages:
+            keycard: Keycard = reader.extractKeycard(inDir + keycardImage)
+            wordgrid: Wordgrid = reader.extractWordgrid(inDir + wordgridImage)
+            print(keycard.grid)
+            print(wordgrid.grid)

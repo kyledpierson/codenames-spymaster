@@ -165,6 +165,19 @@ class Segmenter:
                                            Point(160 + col * 60, 160 + row * 60))
         return innerBoxes
 
+    @staticmethod
+    def inferCardsFromGridlines(image: Image) -> np.array:
+        height, width = image.shape[:2]
+        w = width / 5
+        h = height / 5
+
+        cards: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
+        for row in range(5):
+            for col in range(5):
+                cards[row, col] = Box(Point(col * w, row * h),
+                                      Point(col * w + w, row * h + h))
+        return cards
+
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
     # -------------------------------------------------------- #

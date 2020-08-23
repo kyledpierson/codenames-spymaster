@@ -11,7 +11,7 @@ class Team(Enum):
     ASSASSIN = 3
 
 
-class KeycardDescriptor:
+class Keycard:
     grid: np.array = None
 
     def __init__(self, dim: int = 5):

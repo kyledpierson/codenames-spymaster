@@ -3,16 +3,18 @@ import imutils
 import numpy as np
 from typing import Tuple
 
+from imageprocessing.Detector import Detector
 from imageprocessing.Preprocessor import Preprocessor
 from imageprocessing.Segmenter import Segmenter
 from imageprocessing.geometry.Box import Box
 from imageprocessing.geometry.Point import Point
-from KeycardDescriptor import Team, KeycardDescriptor
+from gamecomponents.Keycard import Team, Keycard
+from gamecomponents.Wordgrid import Wordgrid
 
 Image = np.ndarray
 
 
-class KeycardReader:
+class ComponentReader:
     referenceImage: Image = None
 
     blackMean: np.array = np.array([0, 0, 0])
@@ -31,8 +33,8 @@ class KeycardReader:
             self.referenceImage = cv2.imread(referenceImageFileName)
             self.referenceImage = Segmenter.grabcut(self.referenceImage, 'rectangular')
 
-    def extractKeycardDescriptor(self, path: str) -> KeycardDescriptor:
-        descriptor: KeycardDescriptor = KeycardDescriptor()
+    def extractKeycard(self, path: str) -> Keycard:
+        keycard: Keycard = Keycard()
 
         image: Image = cv2.imread(path)
         segmentedImage: Image = Segmenter.grabcut(image, 'rectangular')
@@ -67,6 +69,29 @@ class KeycardReader:
                 teams: np.array = np.array([Team.ASSASSIN, Team.BLUE, Team.RED, Team.NEUTRAL])
                 team: Team = teams[np.argmin(similarity)]
 
-                descriptor.set2D(row, col, team)
+                keycard.set2D(row, col, team)
 
-        return descriptor
+        return keycard
+
+    def extractWordgrid(self, path: str) -> Wordgrid:
+        wordgrid: Wordgrid = Wordgrid()
+
+        image: Image = cv2.imread(path)
+        boxes: np.array = Segmenter.inferCardsFromGridlines(image)
+
+        rows, cols = boxes.shape
+        for row in range(rows):
+            for col in range(cols):
+                box: Box = boxes[row, col]
+                topLeft: Point = box.topLeft()
+                bottomRight: Point = box.bottomRight()
+                cell: np.array = image[int(topLeft.y):int(bottomRight.y), int(topLeft.x):int(bottomRight.x)]
+
+                detector: Detector = Detector()
+                text = detector.readWordsOnCard(cell)
+
+                print(text)
+                # cv2.imshow("cell-" + str(row) + "-" + str(col), cell)
+                # cv2.waitKey()
+
+        return wordgrid
