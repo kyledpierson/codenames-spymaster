@@ -30,11 +30,19 @@ class Detector:
 
         gradX = cv2.morphologyEx(gradX, cv2.MORPH_CLOSE, rectKernel)
         thresh = cv2.threshold(gradX, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-        thresh = cv2.erode(thresh, None, iterations=5)
+        thresh = cv2.erode(thresh, None, iterations=1)
+
+        # Mask off side border to remove card edges
+        rows, cols = image.shape[:2]
+        mask = np.zeros((rows, cols), np.uint8)
+        mask[int(0.1 * rows):rows, int(0.1 * cols):int(0.9 * cols)] = 255
+        thresh = cv2.bitwise_and(thresh, mask)
 
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+        text: str = ""
         for c in contours:
             (x, y, w, h) = cv2.boundingRect(c)
 
@@ -44,17 +52,13 @@ class Detector:
             (w, h) = (w + (pX * 2), h + (pY * 2))
 
             roi = gray[y:y + h, x:x + w].copy()
-            break
 
-        filename = "{}.png".format(os.getpid())
-        cv2.imwrite(filename, roi)
-        text = pytesseract.image_to_string(Image.open(filename))
-        os.remove(filename)
-
-        # cv2.imshow("GRAY", gray)
-        # cv2.imshow("BLACKHAT", blackhat)
-        # cv2.imshow("THRESH", thresh)
-        # cv2.imshow("ROI", roi)
-        # cv2.waitKey()
+            filename = "{}.png".format(os.getpid())
+            cv2.imwrite(filename, roi)
+            text = pytesseract.image_to_string(Image.open(filename))
+            os.remove(filename)
+            text = (" ").join(text.split())
+            if text:
+                break
 
         return text
