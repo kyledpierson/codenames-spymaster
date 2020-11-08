@@ -14,7 +14,7 @@ class Detector:
         pass
 
     @staticmethod
-    def readWordsOnCard(image: cvImage):
+    def readTextOnCard(image: cvImage) -> str:
         # TODO: tune this
         rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 5))
 

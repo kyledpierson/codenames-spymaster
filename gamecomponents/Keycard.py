@@ -14,7 +14,7 @@ class Team(Enum):
 class Keycard:
     grid: np.array = None
 
-    def __init__(self, dim: int = 5):
+    def __init__(self, dim: int):
         self.grid = np.array([[Team.NEUTRAL for col in range(dim)] for row in range(dim)], dtype=Team)
 
     def set1D(self, pos: int, team: Team):

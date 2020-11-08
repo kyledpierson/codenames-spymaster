@@ -1,3 +1,5 @@
+from globalvariables import GRID_SIZE
+
 from gamecomponents.ComponentReader import ComponentReader
 from gamecomponents.Keycard import Keycard
 from gamecomponents.Wordgrid import Wordgrid
@@ -36,21 +38,20 @@ keycardImages: list = [
     # 'keycard-offcenter-3.jpg',
     # 'keycard-offcenter-4.jpg'
 ]
-wordgridImages = [
+wordgridImages: list = [
     'word-grid-1.png',
     # 'word-grid-2.JPG',
     # 'word-grid-3.jpg',
     # 'word-grid-4.png',
 ]
-referenceImageFileName: str = 'keycard-reference.webp'
 # ==================================================
 
 if __name__ == '__main__':
-    reader: ComponentReader = ComponentReader(inDir + referenceImageFileName)
+    reader: ComponentReader = ComponentReader()
 
     for keycardImage in keycardImages:
-        for wordgridImage in wordgridImages:
-            keycard: Keycard = reader.extractKeycard(inDir + keycardImage)
-            wordgrid: Wordgrid = reader.extractWordgrid(inDir + wordgridImage)
-            print(keycard.grid)
-            print(wordgrid.grid)
+        keycard: Keycard = reader.extractKeycard(inDir + keycardImage, GRID_SIZE)
+        print(keycard.grid)
+    for wordgridImage in wordgridImages:
+        wordgrid: Wordgrid = reader.extractWordgrid(inDir + wordgridImage, GRID_SIZE)
+        print(wordgrid.grid)

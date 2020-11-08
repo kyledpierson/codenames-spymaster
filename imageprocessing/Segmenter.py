@@ -129,7 +129,7 @@ class Segmenter:
         return thresholdedImage
 
     @staticmethod
-    def inferBoxesFromBlackRegions(blackResponseImage: Image) -> np.array:
+    def inferBoxesFromBlackRegions(blackResponseImage: Image, numBoxes: int) -> np.array:
         if len(blackResponseImage.shape) < 3:
             binaryImage = blackResponseImage.copy()
             processedImage = cv2.cvtColor(blackResponseImage, cv2.COLOR_GRAY2BGR)
@@ -144,39 +144,17 @@ class Segmenter:
         outerBoxes: np.array = np.array([[Box()]], dtype=Box)
         Segmenter.__createBoxesFromContours(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
-        referenceBoxes = outerBoxes[0, 0].divide(5)
-        innerBoxes: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
+        referenceBoxes = outerBoxes[0, 0].divide(numBoxes)
+        innerBoxes: np.array = np.array([[Box() for col in range(numBoxes)] for row in range(numBoxes)], dtype=Box)
         Segmenter.__createBoxesFromContours(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
 
-        for row in range(5):
-            for col in range(5):
+        for row in range(numBoxes):
+            for col in range(numBoxes):
                 box = innerBoxes[row, col]
                 if box.bottomRight().x == 0:
                     Segmenter.__inferBoxFromSurroundingBoxes(innerBoxes, row, col)
 
         return innerBoxes
-
-    @staticmethod
-    def inferBoxesFromGridlines() -> np.array:
-        innerBoxes: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
-        for row in range(5):
-            for col in range(5):
-                innerBoxes[row, col] = Box(Point(100 + col * 60, 100 + row * 60),
-                                           Point(160 + col * 60, 160 + row * 60))
-        return innerBoxes
-
-    @staticmethod
-    def inferCardsFromGridlines(image: Image) -> np.array:
-        height, width = image.shape[:2]
-        w = width / 5
-        h = height / 5
-
-        cards: np.array = np.array([[Box() for col in range(5)] for row in range(5)], dtype=Box)
-        for row in range(5):
-            for col in range(5):
-                cards[row, col] = Box(Point(col * w, row * h),
-                                      Point(col * w + w, row * h + h))
-        return cards
 
     # -------------------------------------------------------- #
     # -------------------- Helper Methods -------------------- #
