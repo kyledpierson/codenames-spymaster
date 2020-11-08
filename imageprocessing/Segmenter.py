@@ -8,6 +8,7 @@ import numpy as np
 from imageprocessing.geometry.Box import Box
 from imageprocessing.geometry.Point import Point
 
+Grid = np.array
 Image = np.ndarray
 
 
@@ -101,7 +102,7 @@ class Segmenter:
         graph.maxflow()
 
         segments = graph.get_grid_segments(nodes)
-        labels = np.array(segments, dtype=np.uint8)
+        labels: np.array = np.array(segments, dtype=np.uint8)
         segmentedImage = cv2.bitwise_and(image, image, mask=labels)
 
         return segmentedImage
@@ -129,7 +130,7 @@ class Segmenter:
         return thresholdedImage
 
     @staticmethod
-    def inferBoxesFromBlackRegions(blackResponseImage: Image, numBoxes: int) -> np.array:
+    def inferBoxesFromBlackRegions(blackResponseImage: Image, numBoxes: int) -> Grid:
         if len(blackResponseImage.shape) < 3:
             binaryImage = blackResponseImage.copy()
             processedImage = cv2.cvtColor(blackResponseImage, cv2.COLOR_GRAY2BGR)
@@ -141,11 +142,11 @@ class Segmenter:
 
         contours, hierarchy = cv2.findContours(binaryImage, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        outerBoxes: np.array = np.array([[Box()]], dtype=Box)
+        outerBoxes: Grid = Grid([[Box()]], dtype=Box)
         Segmenter.__createBoxesFromContours(outerBoxes, outerBoxes, contours, 5000, 300000, processedImage)
 
         referenceBoxes = outerBoxes[0, 0].divide(numBoxes)
-        innerBoxes: np.array = np.array([[Box() for col in range(numBoxes)] for row in range(numBoxes)], dtype=Box)
+        innerBoxes: Grid = Grid([[Box() for col in range(numBoxes)] for row in range(numBoxes)], dtype=Box)
         Segmenter.__createBoxesFromContours(innerBoxes, referenceBoxes, contours, 1000, 5000, processedImage)
 
         for row in range(numBoxes):
@@ -179,7 +180,7 @@ class Segmenter:
         return n * d * 255
 
     @staticmethod
-    def __createBoxesFromContours(boxes: np.array, referenceBoxes: np.array, contours: np.array, minArea: int,
+    def __createBoxesFromContours(boxes: Grid, referenceBoxes: Grid, contours: np.array, minArea: int,
                                   maxArea: int, processedImage: Image):
         for c in contours:
             area = cv2.contourArea(c)
@@ -198,7 +199,7 @@ class Segmenter:
                         cv2.drawContours(processedImage, [c], -1, (0, 255, 0), 2)
 
     @staticmethod
-    def __nearestBox(box: Box, boxes: np.array) -> Tuple:
+    def __nearestBox(box: Box, boxes: Grid) -> Tuple:
         nearestDistance: float = float('inf')
         nearestIndex: Tuple = (0, 0)
 
@@ -213,7 +214,7 @@ class Segmenter:
         return nearestIndex
 
     @staticmethod
-    def __inferBoxFromSurroundingBoxes(innerBoxes: np.array, row: int, col: int):
+    def __inferBoxFromSurroundingBoxes(innerBoxes: Grid, row: int, col: int):
         topLeftXs: np.array = np.array([])
         topLeftYs: np.array = np.array([])
         bottomRightXs: np.array = np.array([])

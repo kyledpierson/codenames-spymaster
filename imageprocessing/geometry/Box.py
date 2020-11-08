@@ -2,6 +2,8 @@ import numpy as np
 
 from .Point import Point
 
+Grid = np.array
+
 
 class Box:
     box: np.array = None
@@ -32,9 +34,9 @@ class Box:
         else:
             raise ValueError(axis + ' axis not implemented, must specify x or y')
 
-    def divide(self, dim: int) -> np.array:
+    def divide(self, dim: int) -> Grid:
         edges: np.array = self.topLeft().divide(self.bottomRight(), dim)
-        boxes: np.array = np.array([[Box() for col in range(dim)] for row in range(dim)], dtype=Box)
+        boxes: Grid = Grid([[Box() for col in range(dim)] for row in range(dim)], dtype=Box)
         for row in range(dim):
             for col in range(dim):
                 boxes[row, col].box = np.array([

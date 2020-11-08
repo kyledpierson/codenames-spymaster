@@ -7,13 +7,13 @@ Grid = np.array
 Image = np.array
 
 
-def generateBoxes(width: int, height: int, boxWidth: int, boxHeight: int, numBoxes: int) -> np.array:
+def generateBoxes(width: int, height: int, boxWidth: int, boxHeight: int, numBoxes: int) -> Grid:
     gridWidth: int = numBoxes * boxWidth
     gridHeight: int = numBoxes * boxHeight
     minX: int = int((width - gridWidth) / 2)
     minY: int = int((height - gridHeight) / 2)
 
-    boxes: np.array = np.array([[Box() for col in range(numBoxes)] for row in range(numBoxes)], dtype=Box)
+    boxes: Grid = Grid([[Box() for col in range(numBoxes)] for row in range(numBoxes)], dtype=Box)
     for row in range(numBoxes):
         for col in range(numBoxes):
             boxes[row, col] = Box(Point(minX + boxWidth * col, minY + boxHeight * row),
@@ -21,19 +21,19 @@ def generateBoxes(width: int, height: int, boxWidth: int, boxHeight: int, numBox
     return boxes
 
 
-def inferSquareBoxesFromGridlines(image: Image, numBoxes: int) -> np.array:
+def inferSquareBoxesFromGridlines(image: Image, numBoxes: int) -> Grid:
     height, width = image.shape[:2]
     squareSize = int(min(height, width) / (numBoxes + 1))
-    boxes: np.array = generateBoxes(width, height, squareSize, squareSize, numBoxes)
+    boxes: Grid = generateBoxes(width, height, squareSize, squareSize, numBoxes)
     return boxes
 
 
-def inferCardBoxesFromGridlines(image: Image, numBoxes: int) -> np.array:
+def inferCardBoxesFromGridlines(image: Image, numBoxes: int) -> Grid:
     height, width = image.shape[:2]
     squareSize = int(min(height, width) / (numBoxes + 1))
     rectangleHeight: int = squareSize
     rectangleWidth: int = int(squareSize * 1.5357)
-    boxes: np.array = generateBoxes(width, height, rectangleWidth, rectangleHeight, numBoxes)
+    boxes: Grid = generateBoxes(width, height, rectangleWidth, rectangleHeight, numBoxes)
     return boxes
 
 
@@ -44,6 +44,6 @@ def iterateCellsInImage(image: Image, grid: Grid, func):
             box: Box = grid[row, col]
             topLeft: Point = box.topLeft()
             bottomRight: Point = box.bottomRight()
-            cell: np.array = image[int(topLeft.y):int(bottomRight.y), int(topLeft.x):int(bottomRight.x)]
+            cell: Image = image[int(topLeft.y):int(bottomRight.y), int(topLeft.x):int(bottomRight.x)]
 
             func(row, col, cell)

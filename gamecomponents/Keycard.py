@@ -3,6 +3,8 @@ import numpy as np
 from enum import Enum
 from math import floor
 
+Grid = np.array
+
 
 class Team(Enum):
     NEUTRAL = 0
@@ -12,10 +14,10 @@ class Team(Enum):
 
 
 class Keycard:
-    grid: np.array = None
+    grid: Grid = None
 
     def __init__(self, dim: int):
-        self.grid = np.array([[Team.NEUTRAL for col in range(dim)] for row in range(dim)], dtype=Team)
+        self.grid = Grid([[Team.NEUTRAL for col in range(dim)] for row in range(dim)], dtype=Team)
 
     def set1D(self, pos: int, team: Team):
         rows, cols = self.grid.shape

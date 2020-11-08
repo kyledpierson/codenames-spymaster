@@ -46,25 +46,25 @@ class Filterer:
         return coloredImage
 
     @staticmethod
-    def enhanceEdges(image: Image, action: str, kernel: np.array = None) -> Image:
+    def enhanceEdges(image: Image, action: str, kernel: Image = None) -> Image:
         enhancedImage: Image = cv2.edgePreservingFilter(image)
         # Alternative: cv2.bilateralFilter(image, 5, 50, 50)
 
         if not kernel:
             if action == 'sharpen':
-                kernel = np.array([[-1, -1, -1],
-                                   [-1, +9, -1],
-                                   [-1, -1, -1]])
+                kernel = Image([[-1, -1, -1],
+                                [-1, +9, -1],
+                                [-1, -1, -1]])
             elif action == 'excessiveSharpen':
-                kernel = np.array([[+1, +1, +1],
-                                   [+1, -7, +1],
-                                   [+1, +1, +1]])
+                kernel = Image([[+1, +1, +1],
+                                [+1, -7, +1],
+                                [+1, +1, +1]])
             elif action == 'enhanceEdges':
-                kernel = np.array([[-1, -1, -1, -1, -1],
-                                   [-1, +2, +2, +2, -1],
-                                   [-1, +2, +8, +2, -1],
-                                   [-1, +2, +2, +2, -1],
-                                   [-1, -1, -1, -1, -1]]) / 8.0
+                kernel = Image([[-1, -1, -1, -1, -1],
+                                [-1, +2, +2, +2, -1],
+                                [-1, +2, +8, +2, -1],
+                                [-1, +2, +2, +2, -1],
+                                [-1, -1, -1, -1, -1]]) / 8.0
             else:
                 raise ValueError(action + ' filter not implemented')
 

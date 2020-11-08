@@ -2,12 +2,14 @@ import numpy as np
 
 from math import floor
 
+Grid = np.array
+
 
 class Wordgrid:
-    grid: np.array = None
+    grid: Grid = None
 
     def __init__(self, dim: int):
-        self.grid = np.array([["" for col in range(dim)] for row in range(dim)], dtype=str)
+        self.grid = Grid([["" for col in range(dim)] for row in range(dim)], dtype=str)
 
     def set1D(self, pos: int, text: str):
         rows, cols = self.grid.shape
