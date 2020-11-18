@@ -9,7 +9,7 @@ class Wordgrid:
     grid: Grid = None
 
     def __init__(self, dim: int):
-        self.grid = Grid([["" for col in range(dim)] for row in range(dim)], dtype=str)
+        self.grid = Grid([["" for col in range(dim)] for row in range(dim)], dtype="U20")
 
     def set1D(self, pos: int, text: str):
         rows, cols = self.grid.shape

@@ -24,25 +24,10 @@ if colorSpace is cv2.COLOR_BGR2HLS:
 inDir: str = 'inImages/'
 outDir: str = 'outImages/'
 keycardImages: list = [
-    'keycard-1.jpg',
-    # 'keycard-2.jpg',
-    # 'keycard-3.jpg',
-    # 'keycard-light-1.jpg',
-    # 'keycard-dark-1.jpg',
-    # 'keycard-dark-2.jpg',
-    # 'keycard-noborder-1.jpg',
-    # 'keycard-noborder-2.jpg',
-    # 'keycard-noborder-3.jpg',
-    # 'keycard-offcenter-1.jpg',
-    # 'keycard-offcenter-2.jpg',
-    # 'keycard-offcenter-3.jpg',
-    # 'keycard-offcenter-4.jpg'
+    "keycard.jpg"
 ]
 wordgridImages: list = [
-    'word-grid-1.png',
-    # 'word-grid-2.JPG',
-    # 'word-grid-3.jpg',
-    # 'word-grid-4.png',
+    "wordgrid.jpg"
 ]
 # ==================================================
 
