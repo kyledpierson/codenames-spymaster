@@ -1,8 +1,9 @@
+import numpy as np
+
 from globalvariables import GRID_SIZE
 
 from gamecomponents.ComponentReader import ComponentReader
-from gamecomponents.Keycard import Keycard
-from gamecomponents.Wordgrid import Wordgrid
+from gamecomponents.Card import Card, Team
 
 """
 TODO
@@ -18,6 +19,10 @@ if colorSpace is cv2.COLOR_BGR2HLS:
     darkRed2 = (255, 150, 255)
     lightBlue = (115, 75, 120)
     darkBlue = (155, 130, 255)
+    
+cv2.imshow("Image", image)
+cv2.waitKey()
+cv2.destroyAllWindows()
 """
 
 # ==================================================
@@ -31,12 +36,20 @@ wordgridImages: list = [
 ]
 # ==================================================
 
+Grid = np.array
+
 if __name__ == '__main__':
     reader: ComponentReader = ComponentReader()
+    cardGrid: Grid = Grid([[Card() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Card)
 
     for keycardImage in keycardImages:
-        keycard: Keycard = reader.extractKeycard(inDir + keycardImage, GRID_SIZE)
-        print(keycard.grid)
+        reader.readKeycard(inDir + keycardImage, cardGrid)
     for wordgridImage in wordgridImages:
-        wordgrid: Wordgrid = reader.extractWordgrid(inDir + wordgridImage, GRID_SIZE)
-        print(wordgrid.grid)
+        reader.readWordgrid(inDir + wordgridImage, cardGrid)
+
+    output: str = ""
+    for row in range(GRID_SIZE):
+        for col in range(GRID_SIZE):
+            output += "[{:^30}]".format(str(cardGrid[row, col]))
+        output += "\n"
+    print(output)
