@@ -6,12 +6,6 @@ from gamecomponents.ComponentReader import ComponentReader
 from gamecomponents.Card import Card, Team
 
 """
-TODO
- - Evaluate all the places I'm doing a gaussian blur
-
-Ideas
- - Canny
-
 if colorSpace is cv2.COLOR_BGR2HLS:
     lightRed1 = (0, 100, 150)
     darkRed1 = (40, 150, 255)
