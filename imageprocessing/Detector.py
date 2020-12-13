@@ -41,7 +41,7 @@ class Detector:
             os.remove(filename)
 
             # Remove excess whitespace and non-alphanumeric characters
-            text = (self.regex.sub("", " ".join(text.split()))).upper()
+            text = self.regex.sub("", " ".join(text.split())).lower()
             if text:
                 break
 
