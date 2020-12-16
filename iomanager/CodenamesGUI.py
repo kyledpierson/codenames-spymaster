@@ -22,7 +22,7 @@ class CodenamesGUI:
         elif team == Team.NEUTRAL:
             return "bisque"
 
-    def validateKeyCard(self, cardGrid: Grid):
+    def verifyKeyCard(self, cardGrid: Grid):
         window = tk.Tk()
 
         def changeTeam(event: tk.EventType, i: int, j: int):
@@ -54,14 +54,14 @@ class CodenamesGUI:
 
         window.mainloop()
 
-    def validateWordGrid(self, cardGrid: Grid):
+    def verifyWordGrid(self, cardGrid: Grid):
         window = tk.Tk()
         entries: Grid = Grid([[tk.Entry() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=tk.Entry)
 
         def changeText():
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE):
-                    cardGrid[row, col].setText(entries[row, col].get().lower())
+                    cardGrid[row, col].setText(entries[row, col].get())
             window.destroy()
 
         for row in range(GRID_SIZE):

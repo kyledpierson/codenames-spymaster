@@ -2,7 +2,7 @@ import numpy as np
 
 from globalvariables import GRID_SIZE
 
-from cluegenerator.ClueGenerator import ClueGenerator
+from cluefinder.ClueFinder import ClueFinder
 from gamecomponents.ComponentReader import ComponentReader
 from gamecomponents.Card import Card, Team
 from iomanager.CodenamesGUI import CodenamesGUI
@@ -30,6 +30,13 @@ pca = PCA()
 pca.fit(x)
 
 [(w, ", ".join(closest_words(w)[1:10]) + "...") for w in ["magic", "sport", "scuba", "sock"]]
+
+output: str = ""
+for row in range(GRID_SIZE):
+    for col in range(GRID_SIZE):
+        output += "[{:^30}]".format(str(cardGrid[row, col]))
+    output += "\n"
+print(output)
 """
 
 # ==================================================
@@ -47,28 +54,23 @@ Grid = np.array
 
 if __name__ == '__main__':
     reader: ComponentReader = ComponentReader()
-    codenamesGUI: CodenamesGUI = CodenamesGUI()
+    gui: CodenamesGUI = CodenamesGUI()
     cardGrid: Grid = Grid([[Card() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Card)
 
     for keycardImage in keycardImages:
         reader.readKeycard(inDir + keycardImage, cardGrid)
-    codenamesGUI.validateKeyCard(cardGrid)
+    gui.verifyKeyCard(cardGrid)
 
     for wordgridImage in wordgridImages:
         reader.readWordgrid(inDir + wordgridImage, cardGrid)
-    codenamesGUI.validateWordGrid(cardGrid)
+    gui.verifyWordGrid(cardGrid)
 
-    output: str = ""
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            output += "[{:^30}]".format(str(cardGrid[row, col]))
-        output += "\n"
-    print(output)
+    clueFinder: ClueFinder = ClueFinder(vocabularySize=50000)
+    while not clueFinder.checkVocabulary(cardGrid):
+        gui.verifyWordGrid(cardGrid)
 
-    """
-    clueGenerator: ClueGenerator = ClueGenerator("glove.42B.300d/top_100000.txt")
-    redClue: str = clueGenerator.getClue(cardGrid, Team.RED)
+    redClue: str = clueFinder.getClue(cardGrid, Team.RED, model="gloveTree")
+    blueClue: str = clueFinder.getClue(cardGrid, Team.BLUE, model="gloveTree")
+
     print(redClue)
-    blueClue = clueGenerator.getClue(cardGrid, Team.BLUE)
     print(blueClue)
-    """
