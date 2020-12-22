@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-from gamecomponents.Card import Team
+from .Card import Team
+
 from globalvariables import GRID_SIZE
 from imageprocessing.Detector import Detector
 from imageprocessing.Filterer import Filterer
@@ -57,7 +58,7 @@ class ComponentReader:
         def setTeam(row: int, col: int, cell: Image):
             similarity: np.array = similarities[row * GRID_SIZE + col]
             team: Team = self.teams[np.argmin(similarity)]
-            cardGrid[row, col].setTeam(team)
+            cardGrid[row, col].team = team
 
         ComponentReader.__iterateCellsInImage(image, boxes, setTeam)
 
@@ -68,7 +69,7 @@ class ComponentReader:
 
         def inferTextFromCell(row: int, col: int, cell: Image):
             text: str = detector.readTextOnCard(cell)
-            cardGrid[row, col].setText(text)
+            cardGrid[row, col].text = text
 
         ComponentReader.__iterateCellsInImage(image, boxes, inferTextFromCell)
 

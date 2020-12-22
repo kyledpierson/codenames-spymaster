@@ -2,6 +2,7 @@ gensim
 imutils
 numpy
 opencv-python
+pillow
 pytesseract
 scipy
 scikit-learn

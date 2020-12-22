@@ -20,7 +20,7 @@ class Detector:
         image = Filterer.equalizeHistogram(image, cv2.COLOR_BGR2LAB, cv2.COLOR_LAB2BGR, (True, False, False))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        boxes: list = self.__getTextBoundingBoxCandidates(image, True)
+        boxes: list = Detector.__getTextBoundingBoxCandidates(image, True)
 
         text: str = ""
         (rows, cols) = image.shape[:2]
@@ -47,7 +47,8 @@ class Detector:
 
         return text
 
-    def __getTextBoundingBoxCandidates(self, image: cvImage, useGradient: bool) -> list:
+    @staticmethod
+    def __getTextBoundingBoxCandidates(image: cvImage, useGradient: bool) -> list:
         # IDEAS
         # - weight areas farther from the expected word to be darker
         # --- side: int = int((5. / 43.) * cols)

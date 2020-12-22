@@ -16,12 +16,3 @@ class Card:
 
     def __str__(self):
         return str(self.text) + ", " + str(self.team) + ", " + str(self.visible)
-
-    def setTeam(self, team: Team):
-        self.team = team
-
-    def setText(self, text: str):
-        self.text = text
-
-    def setVisible(self, visible: bool):
-        self.visible = visible
