@@ -1,9 +1,9 @@
 import numpy as np
 
-from scipy import spatial
 from typing import Tuple
 
 from .ClueFinder import ClueFinder
+from .heuristics import minimax, weightedSum
 
 
 class BruteForceClueFinder(ClueFinder):
@@ -22,29 +22,18 @@ class BruteForceClueFinder(ClueFinder):
         return text in self.vocabulary
 
     def _getBestClue(self, positiveWords: np.array, negativeWords: np.array) -> Tuple:
-        goodClues: np.array = sorted(self.vocabulary.keys(),
-                                     key=lambda word: self.__goodness(word, positiveWords, negativeWords), reverse=True)
-        bestClues: np.array = [(word, self.__minimax(word, positiveWords, negativeWords)) for word in sorted(
-            goodClues[:100], key=lambda word: self.__minimax(word, positiveWords, negativeWords), reverse=True)]
+        goodClues: np.array = sorted(self.vocabulary.keys(), reverse=True,
+                                     key=lambda word: weightedSum(word, positiveWords, negativeWords, self.__distance))
+        bestClues: np.array = [(word, minimax(word, positiveWords, negativeWords, self.__distance)) for word in
+                               sorted(goodClues[:100], reverse=True,
+                                      key=lambda word: minimax(word, positiveWords, negativeWords, self.__distance))]
 
         for (clue, score) in bestClues:
             if self._validate(clue, positiveWords, negativeWords):
-                return clue, score
+                return clue, score, positiveWords
+
+        return "", 0, np.array([])
 
     # ========== PRIVATE ========== #
     def __distance(self, firstWord: str, secondWord: str) -> float:
-        return spatial.distance.cosine(self.vocabulary[firstWord], self.vocabulary[secondWord])
-
-    def __goodness(self, word: str, positiveWords: np.array, negativeWords: np.array) -> float:
-        if word in np.append(positiveWords, negativeWords):
-            return float("-inf")
-        else:
-            return sum([self.__distance(word, negativeWord) for negativeWord in negativeWords]) - \
-                   4.0 * sum([self.__distance(word, positiveWord) for positiveWord in positiveWords])
-
-    def __minimax(self, word: str, positiveWords: np.array, negativeWords: np.array) -> float:
-        if word in np.append(positiveWords, negativeWords):
-            return float("-inf")
-        else:
-            return min([self.__distance(word, negativeWord) for negativeWord in negativeWords]) - \
-                   max([self.__distance(word, positiveWord) for positiveWord in positiveWords])
+        return self.distance(self.vocabulary[firstWord], self.vocabulary[secondWord])

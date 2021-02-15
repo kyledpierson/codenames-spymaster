@@ -10,6 +10,7 @@ Grid = np.array
 class CodenamesGUI:
     def __init__(self, team: Team = Team.RED):
         self.team: Team = team
+        self.risk: int = 5
         self.gameOver: bool = False
 
     def captureKeycard(self):
@@ -42,7 +43,7 @@ class CodenamesGUI:
     def captureWordgrid(self):
         pass
 
-    def verifyWordgrid(self, cardGrid: Grid):
+    def verifyWordgrid(self, cardGrid: Grid) -> int:
         window = tk.Tk()
         entries: Grid = Grid([[tk.Entry() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=tk.Entry)
 
@@ -51,10 +52,18 @@ class CodenamesGUI:
                 entries[row, col] = tk.Entry(master=window)
                 entries[row, col].insert(0, cardGrid[row, col].text)
                 entries[row, col].grid(row=row, column=col)
+
+        label: tk.Label = tk.Label(master=window, text="Risk (0-10)")
+        label.grid(row=GRID_SIZE, column=0)
+        entry: tk.Entry = tk.Entry(master=window)
+        entry.insert(0, self.risk)
+        entry.grid(row=GRID_SIZE, column=1)
+
         button: tk.Button = tk.Button(master=window, text="Submit")
-        button.bind("<Button 1>", lambda event: CodenamesGUI.__changeText(event, entries, cardGrid))
-        button.grid(row=GRID_SIZE, column=0, columnspan=GRID_SIZE, sticky="wens")
+        button.bind("<Button 1>", lambda event: self.__changeText(event, entries, entry, cardGrid))
+        button.grid(row=GRID_SIZE, column=2, columnspan=GRID_SIZE - 2, sticky="wens")
         window.mainloop()
+        return self.risk
 
     def displayClueAndWait(self, clue: str) -> bool:
         window = tk.Tk()
@@ -104,13 +113,13 @@ class CodenamesGUI:
     def __close(event: tk.EventType):
         event.widget.master.destroy()
 
-    @staticmethod
-    def __changeText(event: tk.EventType, entries: Grid, cardGrid: Grid):
+    def __changeText(self, event: tk.EventType, entries: Grid, entry: tk.Entry, cardGrid: Grid):
         for row in range(GRID_SIZE):
             for col in range(GRID_SIZE):
                 text: str = entries[row, col].get().strip().replace(" ", "_")
                 cardGrid[row, col].text = text
                 cardGrid[row, col].visible = bool(text)
+        self.risk = int(entry.get())
         CodenamesGUI.__close(event)
 
     def __endGame(self, event: tk.EventType):

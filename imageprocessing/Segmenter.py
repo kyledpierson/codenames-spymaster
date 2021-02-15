@@ -17,11 +17,11 @@ class Segmenter:
 
     @staticmethod
     def threshold(image: Image, thresholdImage: Image, method: str, colorRange: Tuple = None) -> Tuple:
-        if method == "adaptive":
+        if method is "adaptive":
             mask = cv2.adaptiveThreshold(thresholdImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 3)
-        elif method == "otsu":
+        elif method is "otsu":
             (_, mask) = cv2.threshold(thresholdImage, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        elif method == "range":
+        elif method is "range":
             (lower, upper) = colorRange
             mask = cv2.inRange(thresholdImage, lower, upper)
         else:

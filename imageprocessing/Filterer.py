@@ -12,7 +12,7 @@ class Filterer:
 
     @staticmethod
     def equalizeHistogram(image: Image, fromColorSpace: int, toColorSpace: int, channelsToEqualize: Tuple) -> Image:
-        if toColorSpace > -1:
+        if fromColorSpace > -1:
             image = cv2.cvtColor(image, fromColorSpace)
         (c1, c2, c3) = cv2.split(image)
 
@@ -23,7 +23,7 @@ class Filterer:
         c3 = clahe.apply(c3) if channelsToEqualize[2] else c3
 
         image = cv2.merge((c1, c2, c3))
-        if fromColorSpace > -1:
+        if toColorSpace > -1:
             image = cv2.cvtColor(image, toColorSpace)
 
         return image

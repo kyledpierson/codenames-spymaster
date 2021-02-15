@@ -70,6 +70,7 @@ class ComponentReader:
         def inferTextFromCell(row: int, col: int, cell: Image):
             text: str = detector.readTextOnCard(cell)
             cardGrid[row, col].text = text
+            cardGrid[row, col].visible = bool(text)
 
         ComponentReader.__iterateCellsInImage(image, boxes, inferTextFromCell)
 

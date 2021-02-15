@@ -1,7 +1,9 @@
 gensim
 imutils
+nltk
 numpy
 opencv-python
+pattern
 pillow
 pytesseract
 scipy

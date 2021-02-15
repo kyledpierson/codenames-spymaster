@@ -14,13 +14,13 @@ cvImage = np.ndarray
 
 class Detector:
     def __init__(self):
-        self.regex: re.Pattern = re.compile("[^a-zA-Z ]")
+        self.regex = re.compile("[^a-zA-Z ]")
 
     def readTextOnCard(self, image: cvImage) -> str:
         image = Filterer.equalizeHistogram(image, cv2.COLOR_BGR2LAB, cv2.COLOR_LAB2BGR, (True, False, False))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        boxes: list = Detector.__getTextBoundingBoxCandidates(image, True)
+        boxes: list = Detector.__getTextBoundingBoxCandidates(image, useGradient=True)
 
         text: str = ""
         (rows, cols) = image.shape[:2]
@@ -37,11 +37,11 @@ class Detector:
 
             filename: str = "{}.png".format(os.getpid())
             cv2.imwrite(filename, textImage)
-            text = pytesseract.image_to_string(Image.open(filename))
+            text = pytesseract.image_to_string(Image.open(filename), config="--psm 7")
             os.remove(filename)
 
             # Remove excess whitespace and non-alphanumeric characters
-            text = self.regex.sub("", " ".join(text.split())).lower()
+            text = self.regex.sub("", " ".join(text.split())).lower().replace(" ", "_")
             if text:
                 break
 

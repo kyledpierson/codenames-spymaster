@@ -34,7 +34,7 @@ class Box:
 
     def divide(self, dim: int) -> Grid:
         edges: np.array = self.topLeft().divide(self.bottomRight(), dim)
-        boxes: Grid = Grid([[Box() for col in range(dim)] for row in range(dim)], dtype=Box)
+        boxes: Grid = Grid([[Box() for _ in range(dim)] for _ in range(dim)], dtype=Box)
         for row in range(dim):
             for col in range(dim):
                 boxes[row, col].box = np.array([
