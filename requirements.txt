@@ -1,4 +1,5 @@
 gensim
+gTTS
 imutils
 nltk
 numpy

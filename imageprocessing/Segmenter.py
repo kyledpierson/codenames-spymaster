@@ -3,7 +3,7 @@ import numpy as np
 
 from typing import Tuple
 
-from globalvariables import GRID_SIZE
+from globalvariables import GRID_SIZE, BOX_WIDTH_RATIO
 from imageprocessing.geometry.Box import Box
 from imageprocessing.geometry.Point import Point
 
@@ -37,29 +37,47 @@ class Segmenter:
     @staticmethod
     def inferKeyBoxesFromOverlay(image: Image) -> Grid:
         (height, width) = image.shape[:2]
-        squareSize: int = int(min(height, width) / (GRID_SIZE + 1))
-        boxes: Grid = Segmenter.__generateBoxes(width, height, squareSize, squareSize)
+        boxes: Grid = Segmenter.iterateBoxes(width, height, 1, 1, Segmenter.generateBoxes)
         return boxes
 
     @staticmethod
     def inferCardBoxesFromOverlay(image: Image) -> Grid:
         (height, width) = image.shape[:2]
-        squareSize: int = int(min(height, width) / (GRID_SIZE + 1))
-        rectangleHeight: int = squareSize
-        rectangleWidth: int = int(squareSize * 1.5357)
-        boxes: Grid = Segmenter.__generateBoxes(width, height, rectangleWidth, rectangleHeight)
+        boxes: Grid = Segmenter.iterateBoxes(width, height, BOX_WIDTH_RATIO, 1, Segmenter.generateBoxes)
         return boxes
 
     @staticmethod
-    def __generateBoxes(width: int, height: int, boxWidth: int, boxHeight: int) -> Grid:
+    def iterateBoxes(width: int, height: int, boxWidthRatio: float, boxHeightRatio: float, boxFunction):
+        squareSize: int = int(min(height, width) / (GRID_SIZE + 1))
+        boxWidth: int = int(squareSize * boxWidthRatio)
+        boxHeight: int = int(squareSize * boxHeightRatio)
         gridWidth: int = GRID_SIZE * boxWidth
         gridHeight: int = GRID_SIZE * boxHeight
         minX: int = int((width - gridWidth) / 2)
         minY: int = int((height - gridHeight) / 2)
 
-        boxes: Grid = Grid([[Box() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Box)
-        for row in range(GRID_SIZE):
-            for col in range(GRID_SIZE):
-                boxes[row, col] = Box(Point(minX + boxWidth * col, minY + boxHeight * row),
-                                      Point(minX + boxWidth * (col + 1), minY + boxHeight * (row + 1)))
-        return boxes
+        return boxFunction(width, height, minX, minY, boxWidth, boxHeight, gridWidth, gridHeight)
+
+    @staticmethod
+    def generateBoxes(width: int, height: int, minX: int, minY: int,
+                      boxWidth: int, boxHeight: int, gridWidth: int, gridHeight: int) -> Grid:
+        return Grid([[Box(Point(minX + boxWidth * col, minY + boxHeight * row),
+                          Point(minX + boxWidth * (col + 1), minY + boxHeight * (row + 1)))
+                      for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Box)
+
+    @staticmethod
+    def generateOverlay(width: int, height: int, minX: int, minY: int,
+                        boxWidth: int, boxHeight: int, gridWidth: int, gridHeight: int) -> Grid:
+        maxX: int = minX + gridWidth
+        maxY: int = minY + gridHeight
+        overlay: np.array = np.zeros((height, width, 3), dtype=np.uint8)
+
+        for i in range(GRID_SIZE + 1):
+            offset = minX + boxWidth * i
+            overlay[minY:maxY, offset, :] = 0xFF
+
+        for i in range(GRID_SIZE + 1):
+            offset = minY + boxHeight * i
+            overlay[offset, minX:maxX, :] = 0xFF
+
+        return overlay

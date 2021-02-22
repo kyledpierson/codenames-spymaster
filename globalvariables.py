@@ -1,1 +1,2 @@
 GRID_SIZE: int = 5
+BOX_WIDTH_RATIO: float = 1.5357

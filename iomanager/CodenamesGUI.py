@@ -2,7 +2,8 @@ import numpy as np
 import tkinter as tk
 
 from gamecomponents.Card import Card, Team
-from globalvariables import GRID_SIZE
+from globalvariables import GRID_SIZE, BOX_WIDTH_RATIO
+from imageprocessing.Segmenter import Segmenter
 
 Grid = np.array
 
@@ -13,8 +14,29 @@ class CodenamesGUI:
         self.risk: int = 5
         self.gameOver: bool = False
 
+    @staticmethod
+    def __captureWithOverlay(name: str, widthRatio: float, heightRatio: float):
+        with PiCamera() as camera:
+            width: int = camera.resolution[0]
+            height: int = camera.resolution[1]
+            overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
+                                                       Segmenter.generateOverlay)
+
+            camera.start_preview()
+            cameraOverlay = camera.add_overlay(np.getbuffer(overlay), format='rgb', layer=3, alpha=128)
+
+            window = tk.Tk()
+            captureButton: tk.Button = tk.Button(master=window, text="Capture")
+            captureButton.grid(row=0, column=0)
+            captureButton.bind("<Button-1>", CodenamesGUI.__close)
+            window.mainloop()
+
+            camera.capture(name, use_video_port=True)
+            camera.remove_overlay(cameraOverlay)
+            camera.stop_preview()
+
     def captureKeycard(self):
-        pass
+        CodenamesGUI.__captureWithOverlay("keycard.jpg", 1, 1)
 
     def verifyKeycard(self, cardGrid: Grid) -> Team:
         window = tk.Tk()
@@ -41,7 +63,7 @@ class CodenamesGUI:
         return self.team
 
     def captureWordgrid(self):
-        pass
+        CodenamesGUI.__captureWithOverlay("wordgrid.jpg", BOX_WIDTH_RATIO, 1)
 
     def verifyWordgrid(self, cardGrid: Grid) -> int:
         window = tk.Tk()
@@ -60,7 +82,7 @@ class CodenamesGUI:
         entry.grid(row=GRID_SIZE, column=1)
 
         button: tk.Button = tk.Button(master=window, text="Submit")
-        button.bind("<Button 1>", lambda event: self.__changeText(event, entries, entry, cardGrid))
+        button.bind("<Button-1>", lambda event: self.__changeText(event, entries, entry, cardGrid))
         button.grid(row=GRID_SIZE, column=2, columnspan=GRID_SIZE - 2, sticky="wens")
         window.mainloop()
         return self.risk
@@ -74,11 +96,11 @@ class CodenamesGUI:
 
         continueButton: tk.Button = tk.Button(master=window, text="Start next turn")
         continueButton.grid(row=1, column=0)
-        continueButton.bind("<Button 1>", CodenamesGUI.__close)
+        continueButton.bind("<Button-1>", CodenamesGUI.__close)
 
         endButton: tk.Button = tk.Button(master=window, text="End game")
         endButton.grid(row=1, column=1)
-        endButton.bind("<Button 1>", self.__endGame)
+        endButton.bind("<Button-1>", self.__endGame)
 
         window.mainloop()
         return self.gameOver
