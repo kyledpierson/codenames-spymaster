@@ -14,27 +14,6 @@ class CodenamesGUI:
         self.risk: int = 5
         self.gameOver: bool = False
 
-    @staticmethod
-    def __captureWithOverlay(name: str, widthRatio: float, heightRatio: float):
-        with PiCamera() as camera:
-            width: int = camera.resolution[0]
-            height: int = camera.resolution[1]
-            overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
-                                                       Segmenter.generateOverlay)
-
-            camera.start_preview()
-            cameraOverlay = camera.add_overlay(np.getbuffer(overlay), format='rgb', layer=3, alpha=128)
-
-            window = tk.Tk()
-            captureButton: tk.Button = tk.Button(master=window, text="Capture")
-            captureButton.grid(row=0, column=0)
-            captureButton.bind("<Button-1>", CodenamesGUI.__close)
-            window.mainloop()
-
-            camera.capture(name, use_video_port=True)
-            camera.remove_overlay(cameraOverlay)
-            camera.stop_preview()
-
     def captureKeycard(self):
         CodenamesGUI.__captureWithOverlay("keycard.jpg", 1, 1)
 
@@ -44,18 +23,18 @@ class CodenamesGUI:
             for col in range(GRID_SIZE):
                 card: Card = cardGrid[row, col]
                 bg: str = CodenamesGUI.__getColor(card.team)
-                button: tk.Button = tk.Button(master=window, width=12, height=4, bg=bg)
+                button: tk.Button = tk.Button(master=window, width=8, height=3, bg=bg)
                 button.bind("<Button-1>", lambda event, c=card: CodenamesGUI.__changeTeam(event, c))
                 button.grid(row=row, column=col, sticky="wens")
 
         # My team button
         bg = CodenamesGUI.__getColor(self.team)
-        button = tk.Button(master=window, width=12, height=4, bg=bg, text="My team")
+        button = tk.Button(master=window, width=8, height=3, bg=bg, text="My team")
         button.bind("<Button-1>", self.__changeMyTeam)
         button.grid(row=GRID_SIZE, column=1, sticky="wens")
 
         # Submit button
-        button = tk.Button(master=window, width=12, height=4, text="Submit")
+        button = tk.Button(master=window, width=8, height=3, text="Submit")
         button.bind("<Button-1>", CodenamesGUI.__close)
         button.grid(row=GRID_SIZE, column=GRID_SIZE - 2, sticky="wens")
 
@@ -106,6 +85,28 @@ class CodenamesGUI:
         return self.gameOver
 
     # ========== PRIVATE ========== #
+    @staticmethod
+    def __captureWithOverlay(name: str, widthRatio: float, heightRatio: float):
+        from picamera import PiCamera
+        with PiCamera() as camera:
+            width: int = camera.resolution[0]
+            height: int = camera.resolution[1]
+            overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
+                                                       Segmenter.generateOverlay)
+
+            camera.start_preview()
+            cameraOverlay = camera.add_overlay(np.getbuffer(overlay), format='rgb', layer=3, alpha=128)
+
+            window = tk.Tk()
+            captureButton: tk.Button = tk.Button(master=window, text="Capture")
+            captureButton.grid(row=0, column=0)
+            captureButton.bind("<Button-1>", CodenamesGUI.__close)
+            window.mainloop()
+
+            camera.capture(name, use_video_port=True)
+            camera.remove_overlay(cameraOverlay)
+            camera.stop_preview()
+
     @staticmethod
     def __getColor(team: Team) -> str:
         if team == Team.ASSASSIN:
