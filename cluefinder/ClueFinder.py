@@ -1,4 +1,5 @@
 import itertools
+import logging
 import numpy as np
 
 from pattern.vector import stem
@@ -36,7 +37,7 @@ class ClueFinder:
         for row in range(GRID_SIZE):
             for col in range(GRID_SIZE):
                 text: str = cardGrid[row, col].text
-                if not self._textInVocabulary(text):
+                if text and not self._textInVocabulary(text):
                     print("ERROR: " + text + " is outside my vocabulary")
                     return False
         return True
@@ -53,11 +54,12 @@ class ClueFinder:
             clues = ClueFinder.__normalizeScores(clues)
 
         clues = [(clue[0], self.riskFunction(clue[1], len(clue[2]), risk), clue[2]) for clue in clues]
+        ClueFinder.__printTopClues(clues)
         clue: Tuple = max(clues, key=lambda clue: clue[1])
 
         self.previousClues = np.append(self.previousClues, clue[0])
 
-        print(clue[0] + str(clue[2]))
+        logging.info("CLUE: " + clue[0] + str(clue[2]) + "\n")
         return clue[0] + ", " + str(len(clue[2]))
 
     # ========== PROTECTED ========== #
@@ -101,8 +103,11 @@ class ClueFinder:
 
     @staticmethod
     def __printTopClues(clues: list, numClues: int = 10):
+        output: str = ""
         clues = sorted(clues, key=lambda clue: clue[1], reverse=True)
-        print(clues[:numClues])
+        for clue in clues[:numClues]:
+            output += str(clue) + "\n"
+        logging.info(output)
 
     @staticmethod
     def __normalizeScores(clues: list) -> list:

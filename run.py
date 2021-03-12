@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import os
 import sys
@@ -25,7 +26,19 @@ TODO:
 Grid = np.array
 Image = np.array
 
+
+def stringifyCardgrid(cardGrid: Grid, cellString) -> str:
+    output: str = ""
+    for row in range(GRID_SIZE):
+        for col in range(GRID_SIZE):
+            output += "[{:^20}]".format(cellString(row, col))
+        output += "\n"
+    return output
+
+
 if __name__ == "__main__":
+    logging.basicConfig(filename="codenames.log", filemode="w", format="%(message)s", level=logging.INFO)
+
     # COMMAND LINE ARGUMENTS
     inDir: str = ""
     outDir: str = ""
@@ -47,16 +60,24 @@ if __name__ == "__main__":
         gui.captureKeycard()
     reader.readKeycard(inDir + "keycard.jpg", cardGrid)
     team: Team = gui.verifyKeycard(cardGrid)
+    logging.info("=========================\n======== KEYCARD ========\n=========================")
+    logging.info(stringifyCardgrid(cardGrid, lambda row, col: str(cardGrid[row, col].team)))
 
     # MAIN GAME LOOP
+    roundNumber: int = 0
     gameOver: bool = False
     while not gameOver:
+        roundNumber = roundNumber + 1
+        logging.info(
+            "=========================\n======== ROUND " + str(roundNumber) + " ========\n=========================")
+
         if not loadImages:
             gui.captureWordgrid()
         reader.readWordgrid(inDir + "wordgrid.jpg", cardGrid)
         risk: int = gui.verifyWordgrid(cardGrid)
         while not clueFinder.checkVocabulary(cardGrid):
             risk = gui.verifyWordgrid(cardGrid)
+        logging.info(stringifyCardgrid(cardGrid, lambda row, col: str(cardGrid[row, col].text)))
 
         clue: str = clueFinder.getClue(cardGrid, team, risk)
 
