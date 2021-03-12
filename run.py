@@ -63,6 +63,10 @@ if __name__ == "__main__":
     logging.info("=========================\n======== KEYCARD ========\n=========================")
     logging.info(stringifyCardgrid(cardGrid, lambda row, col: str(cardGrid[row, col].team)))
 
+    if not loadImages:
+        gui.captureWordgrid()
+    reader.readWordgrid(inDir + "wordgrid.jpg", cardGrid)
+
     # MAIN GAME LOOP
     roundNumber: int = 0
     gameOver: bool = False
@@ -71,9 +75,6 @@ if __name__ == "__main__":
         logging.info(
             "=========================\n======== ROUND " + str(roundNumber) + " ========\n=========================")
 
-        if not loadImages:
-            gui.captureWordgrid()
-        reader.readWordgrid(inDir + "wordgrid.jpg", cardGrid)
         risk: int = gui.verifyWordgrid(cardGrid)
         while not clueFinder.checkVocabulary(cardGrid):
             risk = gui.verifyWordgrid(cardGrid)
