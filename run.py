@@ -28,14 +28,14 @@ Image = np.array
 
 
 def printUsage(arg: str):
-    print("Invalid option: " + arg + "                                                                     \n" +
-          "Usage: python run.py [options]                                                                  \n" +
-          "Options:                                                                                        \n" +
-          "  -noPi                     Don't run Raspberry Pi code for capturing images and dictating clues\n" +
-          "  -keycard <path>           Location of an existing image of the key card                       \n" +
-          "  -wordgrid <path>          Location of an existing image of the grid of words                  \n" +
-          "  -loadInitialState <path>  Location of the object from saveInitialState                        \n" +
-          "  -saveInitialState <path>  Location to save the game's initial state object                      ")
+    print("Invalid option: " + arg + "                                                                           \n" +
+          "Usage: python run.py [options]                                                                        \n" +
+          "Options:                                                                                              \n" +
+          "  -noPi                     Don't run Raspberry Pi code for capturing images and dictating clues      \n" +
+          "  -keycard <path>           Location of an existing image of the key card                             \n" +
+          "  -wordgrid <path>          Location of an existing image of the grid of words                        \n" +
+          "  -loadInitialState <path>  Location of the object from saveInitialState (bypass all image processing)\n" +
+          "  -saveInitialState <path>  Location to save the game's initial state object                            ")
     quit(-1)
 
 

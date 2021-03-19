@@ -18,7 +18,7 @@ Options:
   -noPi                     Don't run Raspberry Pi code for capturing images and dictating clues
   -keycard <path>           Location of an existing image of the key card
   -wordgrid <path>          Location of an existing image of the grid of words
-  -loadInitialState <path>  Location of the object from saveInitialState
+  -loadInitialState <path>  Location of the object from saveInitialState (bypass all image processing)
   -saveInitialState <path>  Location to save the game's initial state object
 ```
 *Examples*
