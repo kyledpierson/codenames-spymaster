@@ -13,9 +13,12 @@ class CodenamesGUI:
         self.team: Team = team
         self.risk: int = 5
         self.gameOver: bool = False
+        self.keycardImagePath: str = "keycard.jpg"
+        self.wordgridImagePath: str = "wordgrid.jpg"
 
-    def captureKeycard(self):
-        CodenamesGUI.__captureWithOverlay("keycard.jpg", 1, 1)
+    def captureKeycard(self) -> str:
+        CodenamesGUI.__captureWithOverlay(self.keycardImagePath, 1, 1)
+        return self.keycardImagePath
 
     def verifyKeycard(self, cardGrid: Grid) -> Team:
         window = tk.Tk()
@@ -41,8 +44,9 @@ class CodenamesGUI:
         window.mainloop()
         return self.team
 
-    def captureWordgrid(self):
-        CodenamesGUI.__captureWithOverlay("wordgrid.jpg", BOX_WIDTH_RATIO, 1)
+    def captureWordgrid(self) -> str:
+        CodenamesGUI.__captureWithOverlay(self.wordgridImagePath, BOX_WIDTH_RATIO, 1)
+        return self.wordgridImagePath
 
     def verifyWordgrid(self, cardGrid: Grid) -> int:
         window = tk.Tk()

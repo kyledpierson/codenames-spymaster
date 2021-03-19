@@ -27,7 +27,19 @@ Grid = np.array
 Image = np.array
 
 
-def stringifyCardgrid(cardGrid: Grid, cellString) -> str:
+def printUsage(arg: str):
+    print("Invalid option: " + arg + "                                                                     \n" +
+          "Usage: python run.py [options]                                                                  \n" +
+          "Options:                                                                                        \n" +
+          "  -noPi                     Don't run Raspberry Pi code for capturing images and dictating clues\n" +
+          "  -keycard <path>           Location of an existing image of the key card                       \n" +
+          "  -wordgrid <path>          Location of an existing image of the grid of words                  \n" +
+          "  -loadInitialState <path>  Location of the object from saveInitialState                        \n" +
+          "  -saveInitialState <path>  Location to save the game's initial state object                      ")
+    quit()
+
+
+def stringifyCardgrid(cellString) -> str:
     output: str = ""
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
@@ -40,15 +52,32 @@ if __name__ == "__main__":
     logging.basicConfig(filename="codenames.log", filemode="w", format="%(message)s", level=logging.INFO)
 
     # COMMAND LINE ARGUMENTS
-    inDir: str = ""
-    outDir: str = ""
-    loadImages: bool = False
+    usePi: bool = True
+    keycard: str = ""
+    wordgrid: str = ""
+    loadInitialState: str = ""
+    saveInitialState: str = ""
 
-    if len(sys.argv) > 1:
-        inDir = sys.argv[1] + "/"
-        loadImages = True
-        if len(sys.argv) > 2:
-            outDir = sys.argv[2] + "/"
+    i: int = 0
+    while i + 1 < len(sys.argv):
+        i = i + 1
+        arg = sys.argv[i]
+        if arg == "-noPi":
+            usePi = False
+        elif arg == "-keycard" and i + 1 < len(sys.argv):
+            i = i + 1
+            keycard = sys.argv[i]
+        elif arg == "-wordgrid" and i + 1 < len(sys.argv):
+            i = i + 1
+            wordgrid = sys.argv[i]
+        elif arg == "-loadInitialState" and i + 1 < len(sys.argv):
+            i = i + 1
+            loadInitialState = sys.argv[i]
+        elif arg == "-saveInitialState" and i + 1 < len(sys.argv):
+            i = i + 1
+            saveInitialState = sys.argv[i]
+        else:
+            printUsage(arg)
 
     # SETUP
     gui: CodenamesGUI = CodenamesGUI()
@@ -56,16 +85,20 @@ if __name__ == "__main__":
     clueFinder: ClueFinder = ApproximationClueFinder(vocabularySize=50000)
     cardGrid: Grid = Grid([[Card() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Card)
 
-    if not loadImages:
-        gui.captureKeycard()
-    reader.readKeycard(inDir + "keycard.jpg", cardGrid)
+    if loadInitialState != "":
+        cardGrid = np.load(loadInitialState, allow_pickle=True)
+    else:
+        if usePi and keycard == "":
+            keycard = gui.captureKeycard()
+        reader.readKeycard(keycard, cardGrid)
+
+        if usePi and wordgrid == "":
+            wordgrid = gui.captureWordgrid()
+        reader.readWordgrid(wordgrid, cardGrid)
+
     team: Team = gui.verifyKeycard(cardGrid)
     logging.info("=========================\n======== KEYCARD ========\n=========================")
-    logging.info(stringifyCardgrid(cardGrid, lambda row, col: str(cardGrid[row, col].team)))
-
-    if not loadImages:
-        gui.captureWordgrid()
-    reader.readWordgrid(inDir + "wordgrid.jpg", cardGrid)
+    logging.info(stringifyCardgrid(lambda row, col: str(cardGrid[row, col].team)))
 
     # MAIN GAME LOOP
     roundNumber: int = 0
@@ -78,12 +111,16 @@ if __name__ == "__main__":
         risk: int = gui.verifyWordgrid(cardGrid)
         while not clueFinder.checkVocabulary(cardGrid):
             risk = gui.verifyWordgrid(cardGrid)
-        logging.info(stringifyCardgrid(cardGrid, lambda row, col: str(cardGrid[row, col].text)))
+        logging.info(stringifyCardgrid(lambda row, col: str(cardGrid[row, col].text)))
+        if saveInitialState != "":
+            np.save(saveInitialState, cardGrid, allow_pickle=True)
+            saveInitialState = ""
 
         clue: str = clueFinder.getClue(cardGrid, team, risk)
 
-        gttsObj = gTTS(text=clue, lang="en")
-        gttsObj.save("gtts.mp3")
-        os.system("mpg321 gtts.mp3")
+        if usePi:
+            gttsObj = gTTS(text=clue, lang="en")
+            gttsObj.save("gtts.mp3")
+            os.system("mpg321 gtts.mp3")
 
         gameOver = gui.displayClueAndWait(clue)
