@@ -36,7 +36,7 @@ def printUsage(arg: str):
           "  -wordgrid <path>          Location of an existing image of the grid of words                  \n" +
           "  -loadInitialState <path>  Location of the object from saveInitialState                        \n" +
           "  -saveInitialState <path>  Location to save the game's initial state object                      ")
-    quit()
+    quit(-1)
 
 
 def stringifyCardgrid(cellString) -> str:
