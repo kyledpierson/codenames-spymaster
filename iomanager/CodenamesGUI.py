@@ -58,7 +58,7 @@ class CodenamesGUI:
                 entries[row, col].insert(0, cardGrid[row, col].text)
                 entries[row, col].grid(row=row, column=col)
 
-        label: tk.Label = tk.Label(master=window, text="Risk (0-10)")
+        label: tk.Label = tk.Label(master=window, text="Risk (-9 - 10+)")
         label.grid(row=GRID_SIZE, column=0)
         entry: tk.Entry = tk.Entry(master=window)
         entry.insert(0, self.risk)

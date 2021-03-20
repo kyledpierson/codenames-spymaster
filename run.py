@@ -14,9 +14,7 @@ from iomanager.CodenamesGUI import CodenamesGUI
 
 """
 TODO:
- - Allow for setting of specific number of connected words
- - Add detection for covered clues
- - have cardGrid be its own class to iterate over cards and maintain game state (team)
+ - Have cardGrid be its own class to iterate over cards and maintain game state (team)
  
  - Implement "related words" strategy
  - Pre-compute distances between words
