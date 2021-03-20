@@ -94,8 +94,8 @@ class CodenamesGUI:
             overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
                                                        Segmenter.generateOverlay)
 
-            camera.start_preview()
-            cameraOverlay = camera.add_overlay(np.getbuffer(overlay), format='rgb', layer=3, alpha=128)
+            camera.start_preview(fullscreen=False, window=(0, 0, 640, 360))
+            cameraOverlay = camera.add_overlay(overlay, format='rgb', layer=3, alpha=128)
 
             window = tk.Tk()
             captureButton: tk.Button = tk.Button(master=window, text="Capture")
