@@ -16,6 +16,7 @@ from iomanager.CodenamesGUI import CodenamesGUI
 TODO:
  - Have cardGrid be its own class to iterate over cards and maintain game state (team)
  
+ - Impose a hierarchy of avoidance to negative words (assassin < other team < neutral)
  - Implement "related words" strategy
  - Pre-compute distances between words
  - Pre-compute nearest neighbors?
