@@ -11,7 +11,7 @@ class ApproximationClueFinder(ClueFinder):
         super().__init__(vocabularySize)
         self.vocabulary: dict = {}
 
-        with open("wordvectors/glove." + str(vocabularySize) + ".txt", "r", encoding="utf8") as vocabularyFile:
+        with open("data/glove." + str(vocabularySize) + ".txt", "r", encoding="utf8") as vocabularyFile:
             for line in vocabularyFile:
                 self.__addWordVectorToVocabulary(line)
 

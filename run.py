@@ -4,6 +4,7 @@ import os
 import sys
 
 from gtts import gTTS
+from playsound import playsound
 
 from cluefinder.ClueFinder import ClueFinder
 from cluefinder.ApproximationClueFinder import ApproximationClueFinder
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     # SETUP
     gui: CodenamesGUI = CodenamesGUI()
     reader: ComponentReader = ComponentReader()
-    clueFinder: ClueFinder = ApproximationClueFinder(vocabularySize=50000)
+    clueFinder: ClueFinder = ApproximationClueFinder(vocabularySize=32768)
     cardGrid: Grid = Grid([[Card() for col in range(GRID_SIZE)] for row in range(GRID_SIZE)], dtype=Card)
 
     if loadInitialState != "":
@@ -90,7 +91,6 @@ if __name__ == "__main__":
         if usePi and keycard == "":
             keycard = gui.captureKeycard()
         reader.readKeycard(keycard, cardGrid)
-
         if usePi and wordgrid == "":
             wordgrid = gui.captureWordgrid()
         reader.readWordgrid(wordgrid, cardGrid)
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         risk: int = gui.verifyWordgrid(cardGrid)
         while not clueFinder.checkVocabulary(cardGrid):
             risk = gui.verifyWordgrid(cardGrid)
+
         logging.info(stringifyCardgrid(lambda row, col: str(cardGrid[row, col].text)))
         if saveInitialState != "":
             np.save(saveInitialState, cardGrid, allow_pickle=True)
@@ -117,9 +118,10 @@ if __name__ == "__main__":
 
         clue: str = clueFinder.getClue(cardGrid, team, risk)
 
+        clueAudio: gTTS = gTTS(text=clue, lang="en")
+        clueAudio.save("clue.mp3")
         if usePi:
-            gttsObj = gTTS(text=clue, lang="en")
-            gttsObj.save("gtts.mp3")
-            os.system("mpg321 gtts.mp3")
-
+            os.system("mpg321 clue.mp3")
+        else:
+            playsound("clue.mp3")
         gameOver = gui.displayClueAndWait(clue)
