@@ -26,7 +26,7 @@ python run.py -noPi -keycard images/keycard.jpg -wordgrid images/wordgrid.jpg
 python run.py -noPi -loadInitialState data/initialState.npy
 ```
 
-### Adding new clue-finding strategies
+## Adding new clue-finding strategies
 If you want to experiment with a new strategy for finding optimal clues, you'll need to create a new child class of
 ClueFinder. Your child class needs to implement the following functions:
 ```
@@ -62,7 +62,7 @@ The base class also provides a protected helper function called `_validate`, whi
 and should return `True` for any clue that your derived class returns. This ensures that your clue follows the rules of
 the game.
 
-###### Using your new ClueFinder
+#### Using your new ClueFinder
 Once you have created your class, you can substitute the instantiation of the ClueFinder object in `run.py` with an
 instance of your class.
 ```
