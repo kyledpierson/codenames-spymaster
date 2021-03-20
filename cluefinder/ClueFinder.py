@@ -1,4 +1,5 @@
 import itertools
+import logging
 import numpy as np
 
 from pattern.vector import stem
@@ -19,6 +20,8 @@ class ClueFinder:
     def __init__(self, vocabularySize: int):
         self.vocabularySize: int = vocabularySize
         self.previousClues: np.array = np.array([])
+        self.hintedWords: np.array = np.array([])
+        self.nonHintedWords: np.array = np.array([])
 
         self.distance = spatial.distance.cosine
         self.heuristic = weightedSum
@@ -36,7 +39,7 @@ class ClueFinder:
         for row in range(GRID_SIZE):
             for col in range(GRID_SIZE):
                 text: str = cardGrid[row, col].text
-                if not self._textInVocabulary(text):
+                if text and not self._textInVocabulary(text):
                     print("ERROR: " + text + " is outside my vocabulary")
                     return False
         return True
@@ -44,20 +47,37 @@ class ClueFinder:
     def getClue(self, cardGrid: Grid, team: Team, risk: int) -> str:
         (positiveWords, negativeWords) = ClueFinder.__getWordsFromCardGrid(cardGrid, team)
 
+        # Try not to give clues for previously hinted words
+        if len(positiveWords) > len(self.hintedWords):
+            if risk >= 0 or len(positiveWords) - len(self.hintedWords) >= abs(risk):
+                positiveWords = np.setdiff1d(positiveWords, self.hintedWords)
+        else:
+            self.hintedWords = np.array([])
+        self.nonHintedWords = np.setdiff1d(positiveWords, self.hintedWords)
+
+        numConnectedWords: range = range(1, positiveWords.size + 1)
+        if risk < 0:
+            numConnectedWords = range(abs(risk), abs(risk) + 1)
+
         clues: list = []
-        for k in range(1, positiveWords.size + 1):
-            clues += [self._getBestClue(connectedWords, negativeWords)
-                      for connectedWords in itertools.combinations(positiveWords, k)]
+        for k in numConnectedWords:
+            for connectedWords in itertools.combinations(positiveWords, k):
+                # Make sure at least one disconnected word is hinted
+                if np.any(np.in1d(connectedWords, self.nonHintedWords)):
+                    clues += [self._getBestClue(connectedWords, negativeWords)]
 
         if self.normalize:
             clues = ClueFinder.__normalizeScores(clues)
 
-        clues = [(clue[0], self.riskFunction(clue[1], len(clue[2]), risk), clue[2]) for clue in clues]
+        if risk >= 0:
+            clues = [(clue[0], self.riskFunction(clue[1], len(clue[2]), risk), clue[2]) for clue in clues]
+        ClueFinder.__printTopClues(clues)
         clue: Tuple = max(clues, key=lambda clue: clue[1])
 
         self.previousClues = np.append(self.previousClues, clue[0])
+        self.hintedWords = np.unique(np.append(self.hintedWords, clue[2]))
 
-        print(clue[0] + str(clue[2]))
+        logging.info("CLUE: " + clue[0] + str(clue[2]) + "\n")
         return clue[0] + ", " + str(len(clue[2]))
 
     # ========== PROTECTED ========== #
@@ -101,8 +121,11 @@ class ClueFinder:
 
     @staticmethod
     def __printTopClues(clues: list, numClues: int = 10):
+        output: str = ""
         clues = sorted(clues, key=lambda clue: clue[1], reverse=True)
-        print(clues[:numClues])
+        for clue in clues[:numClues]:
+            output += str(clue) + "\n"
+        logging.info(output)
 
     @staticmethod
     def __normalizeScores(clues: list) -> list:

@@ -6,6 +6,7 @@ numpy
 opencv-python
 pattern
 pillow
+playsound
 pytesseract
 scipy
 scikit-learn
