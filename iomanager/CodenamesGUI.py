@@ -98,7 +98,7 @@ class CodenamesGUI:
             overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
                                                        Segmenter.generateOverlay)
 
-            camera.start_preview(fullscreen=False, window=(0, 0, 640, 360))
+            camera.start_preview(fullscreen=False, window=(0, 0, 800, 480))
             cameraOverlay = camera.add_overlay(overlay, format='rgb', layer=3, alpha=128)
 
             window = tk.Tk()
