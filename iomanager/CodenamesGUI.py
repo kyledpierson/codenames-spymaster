@@ -93,13 +93,16 @@ class CodenamesGUI:
     def __captureWithOverlay(name: str, widthRatio: float, heightRatio: float):
         from picamera import PiCamera
         with PiCamera() as camera:
-            width: int = camera.resolution[0]
-            height: int = camera.resolution[1]
+            x: int = 40
+            y: int = 0
+            width: int = 760
+            height: int = 480
             overlay: np.array = Segmenter.iterateBoxes(width, height, widthRatio, heightRatio,
                                                        Segmenter.generateOverlay)
 
-            camera.start_preview(fullscreen=False, window=(0, 0, 800, 480))
-            cameraOverlay = camera.add_overlay(overlay, format='rgb', layer=3, alpha=128)
+            camera.start_preview(fullscreen=False, window=(x, y, width, height))
+            cameraOverlay = camera.add_overlay(overlay, format='rgb', layer=3, alpha=128, fullscreen=False,
+                                               window=(x, y, width, height))
 
             window = tk.Tk()
             captureButton: tk.Button = tk.Button(master=window, text="Capture")
