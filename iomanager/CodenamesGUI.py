@@ -105,8 +105,8 @@ class CodenamesGUI:
                                                window=(x, y, width, height))
 
             window = tk.Tk()
-            window.geometry("64x480+0-40")
-            captureButton: tk.Button = tk.Button(master=window, text="C\na\np\nt\nu\nr\ne", width=4, height=32)
+            window.geometry("64x480+0-1")
+            captureButton: tk.Button = tk.Button(master=window, text="C\na\np\nt\nu\nr\ne", width=4, height=26)
             captureButton.grid(row=0, column=0, sticky="nesw")
             captureButton.bind("<Button-1>", CodenamesGUI.__close)
             window.mainloop()
